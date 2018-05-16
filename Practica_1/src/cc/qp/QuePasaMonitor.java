@@ -1,4 +1,5 @@
 package cc.qp;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -7,40 +8,42 @@ import java.util.Map;
 import es.upm.babel.cclib.*;
 
 public class QuePasaMonitor implements QuePasa {
-	private Map<String,ArrayList<Integer>> miembros= new HashMap<String,ArrayList<Integer>>();
-	private Map<String,Integer> creador= new HashMap<String,Integer>();
-	private Map<Integer,ArrayList<Object>> mensaje=new HashMap<Integer,ArrayList<Object>>();
+	private Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
+	private Map<String, Integer> creador = new HashMap<String, Integer>();
+	private Map<Integer, ArrayList<Object>> mensaje = new HashMap<Integer, ArrayList<Object>>();
 	private Monitor mutex;
-	//Todavía no se cuantas conditions poner
-	private Monitor.Cond nosequenombreponer;
+	// Todavía no se cuantas conditions poner
+	private Monitor.Cond condition;
+
 	public QuePasaMonitor() {
-		mutex=new Monitor();
-		nosequenombreponer=mutex.newCond();
+		mutex = new Monitor();
+		condition = mutex.newCond();
 	}
-	
+
 	@Override
 	public void crearGrupo(int creadorUid, String grupo) throws PreconditionFailedException {
-		//Si el grupo ya está creado devuelve un error
+		// Si el grupo ya está creado devuelve un error
 		mutex.enter();
-		if(creador.containsKey(grupo)) { 
+		if (creador.containsKey(grupo)) {
 			mutex.leave();
-			throw new PreconditionFailedException();}
+			throw new PreconditionFailedException();
+		}
 		creador.put(grupo, creadorUid);
-		ArrayList<Integer> miembros_lista=new ArrayList<Integer>();
+		ArrayList<Integer> miembros_lista = new ArrayList<Integer>();
 		miembros_lista.add(creadorUid);
 		miembros.put(grupo, miembros_lista);
 		mutex.leave();
-		
 
 	}
 
 	@Override
 	public void anadirMiembro(int creadorUid, String grupo, int nuevoMiembroUid) throws PreconditionFailedException {
 		mutex.enter();
-		if(!creador.containsValue(creadorUid)||miembros.get(grupo).contains(nuevoMiembroUid)) {
+		if (!creador.containsValue(creadorUid) || miembros.get(grupo).contains(nuevoMiembroUid)) {
 			mutex.leave();
-			throw new PreconditionFailedException();}
-		ArrayList<Integer> listaActualizada=miembros.get(grupo);
+			throw new PreconditionFailedException();
+		}
+		ArrayList<Integer> listaActualizada = miembros.get(grupo);
 		listaActualizada.add(nuevoMiembroUid);
 		miembros.replace(grupo, listaActualizada);
 		mutex.leave();
@@ -49,10 +52,11 @@ public class QuePasaMonitor implements QuePasa {
 	@Override
 	public void salirGrupo(int miembroUid, String grupo) throws PreconditionFailedException {
 		mutex.enter();
-		if(!miembros.get(grupo).contains(miembroUid)||creador.get(grupo).equals(miembroUid)) {
+		if (!miembros.get(grupo).contains(miembroUid) || creador.get(grupo).equals(miembroUid)) {
 			mutex.leave();
-			throw new PreconditionFailedException();}
-		ArrayList<Integer> listaActualizada=miembros.get(grupo);
+			throw new PreconditionFailedException();
+		}
+		ArrayList<Integer> listaActualizada = miembros.get(grupo);
 		listaActualizada.remove(miembroUid);
 		miembros.replace(grupo, listaActualizada);
 		mutex.leave();
@@ -61,25 +65,34 @@ public class QuePasaMonitor implements QuePasa {
 	@Override
 	public void mandarMensaje(int remitenteUid, String grupo, Object contenidos) throws PreconditionFailedException {
 		mutex.enter();
-		if(!miembros.get(grupo).contains(remitenteUid)) {
-		mutex.leave();
-		throw new PreconditionFailedException();}
-		ArrayList<Integer> n_miembros=miembros.get(grupo);
-		for(int i=0;i<n_miembros.size();i++) {
-			ArrayList<Object> aux = mensaje.get(n_miembros.get(i));
-			aux.add(contenidos);
-			mensaje.put(n_miembros.get(i),aux);
+		if (!miembros.get(grupo).contains(remitenteUid)) {
+			mutex.leave();
+			throw new PreconditionFailedException();
 		}
-		mutex.leave();
+		ArrayList<Integer> n_miembros = miembros.get(grupo);
+		try {
+			for (int i = 0; i < n_miembros.size(); i++) {
+				ArrayList<Object> aux = mensaje.get(n_miembros.get(i));
+				if (aux != null) {
+					aux.add(contenidos);
+					
+				} else {
+					ArrayList<Object> aux2 = new ArrayList<Object>();
+					aux2.add(n_miembros.get(i));
+					mensaje.put(n_miembros.get(i), aux2);
+				}
+			}
+			mutex.leave();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public Mensaje leer(int uid) {
-		mutex.enter();
-		if (mensaje.isEmpty()) mutex.leave();
+		// if (mensaje.isEmpty()) mutex.leave();
 		mensaje.remove(uid);
-		mutex.leave();
-		return null;
-
+		ArrayList<Object> aux = mensaje.get(uid);
+		return (Mensaje) aux.get(aux.size() - 1);
 	}
 }
