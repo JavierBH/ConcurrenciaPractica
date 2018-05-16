@@ -9,7 +9,7 @@ import es.upm.babel.cclib.*;
 public class QuePasaMonitor implements QuePasa {
 	private Map<String,ArrayList<Integer>> miembros= new HashMap<String,ArrayList<Integer>>();
 	private Map<String,Integer> creador= new HashMap<String,Integer>();
-	private Map<Integer,LinkedList<Object>> mensaje=new HashMap<Integer,LinkedList<Object>>();
+	private Map<Integer,ArrayList<Object>> mensaje=new HashMap<Integer,ArrayList<Object>>();
 	private Monitor mutex;
 	//Todavía no se cuantas conditions poner
 	private Monitor.Cond nosequenombreponer;
@@ -66,7 +66,7 @@ public class QuePasaMonitor implements QuePasa {
 		throw new PreconditionFailedException();}
 		ArrayList<Integer> n_miembros=miembros.get(grupo);
 		for(int i=0;i<n_miembros.size();i++) {
-			LinkedList<Object> aux = mensaje.get(n_miembros.get(i));
+			ArrayList<Object> aux = mensaje.get(n_miembros.get(i));
 			aux.add(contenidos);
 			mensaje.put(n_miembros.get(i),aux);
 		}
