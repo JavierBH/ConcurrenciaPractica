@@ -1,6 +1,7 @@
 package cc.qp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 import es.upm.babel.cclib.*;
@@ -8,7 +9,7 @@ import es.upm.babel.cclib.*;
 public class QuePasaMonitor implements QuePasa {
 	private Map<String,ArrayList<Integer>> miembros= new HashMap<String,ArrayList<Integer>>();
 	private Map<String,Integer> creador= new HashMap<String,Integer>();
-	private Map<Integer,Tripla<Integer,String,String>> mensaje=new HashMap<Integer,Tripla<Integer,String,String>>();
+	private Map<Integer,LinkedList<Object>> mensaje=new HashMap<Integer,LinkedList<Object>>();
 	private Monitor mutex;
 	//Todavía no se cuantas conditions poner
 	private Monitor.Cond nosequenombreponer;
@@ -63,10 +64,11 @@ public class QuePasaMonitor implements QuePasa {
 		if(!miembros.get(grupo).contains(remitenteUid)) {
 		mutex.leave();
 		throw new PreconditionFailedException();}
-		Tripla<Integer,String,String> secuencia=new Tripla<Integer,String,String>(remitenteUid, grupo, grupo);
 		ArrayList<Integer> n_miembros=miembros.get(grupo);
 		for(int i=0;i<n_miembros.size();i++) {
-			mensaje.put(n_miembros.get(i), secuencia);
+			LinkedList<Object> aux = mensaje.get(n_miembros.get(i));
+			aux.add(contenidos);
+			mensaje.put(n_miembros.get(i),aux);
 		}
 		mutex.leave();
 	}
@@ -74,6 +76,10 @@ public class QuePasaMonitor implements QuePasa {
 	@Override
 	public Mensaje leer(int uid) {
 		mutex.enter();
+		if (mensaje.isEmpty()) mutex.leave();
+		mensaje.remove(mensaje.get(uid));
+		mensaje.remove(uid);
+		mensaje.remove(miembros.get(uid));
 		mutex.leave();
 		return null;
 
