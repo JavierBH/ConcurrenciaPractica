@@ -77,27 +77,9 @@ public class QuePasaMonitor implements QuePasa {
 	public Mensaje leer(int uid) {
 		mutex.enter();
 		if (mensaje.isEmpty()) mutex.leave();
-		mensaje.remove(mensaje.get(uid));
 		mensaje.remove(uid);
-		mensaje.remove(miembros.get(uid));
 		mutex.leave();
 		return null;
 
-	}
-	public class Tripla<T, U, V> {
-
-	    private final T first;
-	    private final U second;
-	    private final V third;
-
-	    public Tripla(T first, U second, V third) {
-	        this.first = first;
-	        this.second = second;
-	        this.third = third;
-	    }
-
-	    public T getFirst() { return first; }
-	    public U getSecond() { return second; }
-	    public V getThird() { return third; }
 	}
 }
