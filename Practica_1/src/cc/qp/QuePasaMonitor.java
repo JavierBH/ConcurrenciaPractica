@@ -2,7 +2,6 @@ package cc.qp;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 
 import es.upm.babel.cclib.*;
@@ -10,16 +9,14 @@ import es.upm.babel.cclib.*;
 public class QuePasaMonitor implements QuePasa {
 	private Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
 	private Map<String, Integer> creador = new HashMap<String, Integer>();
-	private Map<Integer, ArrayList<Object>> mensaje = new HashMap<Integer, ArrayList<Object>>();
+	private Map<Integer, ArrayList<Mensaje>> mensaje = new HashMap<Integer, ArrayList<Mensaje>>();
 	private Monitor mutex;
-	private Monitor mutex_mensaje;
-	// Todavía no se cuantas conditions poner
-	private Monitor.Cond condition;
+	// Todavía no se cuantas hay_mensajes poner
+	private Monitor.Cond hay_mensaje;
 
 	public QuePasaMonitor() {
 		mutex = new Monitor();
-		mutex_mensaje = new Monitor();
-		condition = mutex.newCond();
+		hay_mensaje = mutex.newCond();
 	}
 
 	@Override
@@ -71,17 +68,26 @@ public class QuePasaMonitor implements QuePasa {
 			mutex.leave();
 			throw new PreconditionFailedException();
 		}
+
 		ArrayList<Integer> n_miembros = miembros.get(grupo);
+		Mensaje msge =new Mensaje(remitenteUid,grupo,contenidos);
 		for (int i = 0; i < n_miembros.size(); i++) {
-			ArrayList<Object> aux = mensaje.get(n_miembros.get(i));
+			ArrayList<Mensaje> aux = mensaje.get(n_miembros.get(i));
 			if (aux != null) {
-				aux.add(contenidos);
+				aux.add(msge);
 				mensaje.put(n_miembros.get(i), aux);
-				if (condition.waiting()<2)condition.signal();
+				if (hay_mensaje.waiting()<4) {
+					System.out.println(true+" "+hay_mensaje.waiting());
+					hay_mensaje.signal();
+				}
 			} else {
-				ArrayList<Object> aux2 = new ArrayList<Object>();
-				aux2.add(n_miembros.get(i));
+				ArrayList<Mensaje> aux2 = new ArrayList<Mensaje>();
+				aux2.add(msge);
 				mensaje.put(n_miembros.get(i), aux2);
+				if (hay_mensaje.waiting()<4) {
+					System.out.println(false+" "+hay_mensaje.waiting());
+					hay_mensaje.signal();
+				}
 			}
 		}
 		mutex.leave();
@@ -90,10 +96,14 @@ public class QuePasaMonitor implements QuePasa {
 	@Override
 	public Mensaje leer(int uid) {
 		mutex.enter();
+		if(mensaje.get(uid)==null)
+			hay_mensaje.await();
+		System.out.println(true);
+		ArrayList<Mensaje> aux = mensaje.get(uid);
+		Mensaje msge=aux.get(aux.size() - 1);
 		mensaje.remove(uid);
-		ArrayList<Object> aux = mensaje.get(uid);
-		condition.await();
 		mutex.leave();
-		return (Mensaje) aux.get(aux.size() - 1);
+		return  msge;
 	}
+
 }
