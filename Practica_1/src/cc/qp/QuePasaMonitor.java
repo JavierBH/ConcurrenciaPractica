@@ -12,11 +12,13 @@ public class QuePasaMonitor implements QuePasa {
 	private Map<String, Integer> creador = new HashMap<String, Integer>();
 	private Map<Integer, ArrayList<Object>> mensaje = new HashMap<Integer, ArrayList<Object>>();
 	private Monitor mutex;
+	private Monitor mutex_mensaje;
 	// Todavía no se cuantas conditions poner
 	private Monitor.Cond condition;
 
 	public QuePasaMonitor() {
 		mutex = new Monitor();
+		mutex_mensaje = new Monitor();
 		condition = mutex.newCond();
 	}
 
@@ -70,29 +72,28 @@ public class QuePasaMonitor implements QuePasa {
 			throw new PreconditionFailedException();
 		}
 		ArrayList<Integer> n_miembros = miembros.get(grupo);
-		try {
-			for (int i = 0; i < n_miembros.size(); i++) {
-				ArrayList<Object> aux = mensaje.get(n_miembros.get(i));
-				if (aux != null) {
-					aux.add(contenidos);
-					
-				} else {
-					ArrayList<Object> aux2 = new ArrayList<Object>();
-					aux2.add(n_miembros.get(i));
-					mensaje.put(n_miembros.get(i), aux2);
-				}
+		for (int i = 0; i < n_miembros.size(); i++) {
+			ArrayList<Object> aux = mensaje.get(n_miembros.get(i));
+			if (aux != null) {
+				aux.add(contenidos);
+				mensaje.put(n_miembros.get(i), aux);
+				if (condition.waiting()<2)condition.signal();
+			} else {
+				ArrayList<Object> aux2 = new ArrayList<Object>();
+				aux2.add(n_miembros.get(i));
+				mensaje.put(n_miembros.get(i), aux2);
 			}
-			mutex.leave();
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
+		mutex.leave();
 	}
 
 	@Override
 	public Mensaje leer(int uid) {
-		// if (mensaje.isEmpty()) mutex.leave();
+		mutex.enter();
 		mensaje.remove(uid);
 		ArrayList<Object> aux = mensaje.get(uid);
+		condition.await();
+		mutex.leave();
 		return (Mensaje) aux.get(aux.size() - 1);
 	}
 }
