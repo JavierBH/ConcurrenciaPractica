@@ -13,10 +13,11 @@ public class QuePasaMonitor implements QuePasa {
 	private Monitor mutex;
 	// Todavía no se cuantas hay_mensajes poner
 	private Monitor.Cond hay_mensaje;
-
+	private Monitor.Cond todos_mensajes;
 	public QuePasaMonitor() {
 		mutex = new Monitor();
 		hay_mensaje = mutex.newCond();
+		todos_mensajes = mutex.newCond();
 	}
 
 	@Override
@@ -70,40 +71,40 @@ public class QuePasaMonitor implements QuePasa {
 		}
 
 		ArrayList<Integer> n_miembros = miembros.get(grupo);
-		Mensaje msge =new Mensaje(remitenteUid,grupo,contenidos);
+		Mensaje msge = new Mensaje(remitenteUid, grupo, contenidos);
 		for (int i = 0; i < n_miembros.size(); i++) {
 			ArrayList<Mensaje> aux = mensaje.get(n_miembros.get(i));
 			if (aux != null) {
 				aux.add(msge);
 				mensaje.put(n_miembros.get(i), aux);
-				if (hay_mensaje.waiting()<4) {
-					System.out.println(true+" "+hay_mensaje.waiting());
+				if (hay_mensaje.waiting() > 0) {
 					hay_mensaje.signal();
 				}
 			} else {
 				ArrayList<Mensaje> aux2 = new ArrayList<Mensaje>();
 				aux2.add(msge);
 				mensaje.put(n_miembros.get(i), aux2);
-				if (hay_mensaje.waiting()<4) {
-					System.out.println(false+" "+hay_mensaje.waiting());
+				if (hay_mensaje.waiting() > 0) {
 					hay_mensaje.signal();
 				}
 			}
 		}
+		this.todos_mensajes.signal();
 		mutex.leave();
 	}
 
 	@Override
 	public Mensaje leer(int uid) {
 		mutex.enter();
-		if(mensaje.get(uid)==null)
+		if (mensaje.get(uid) == null){
+			this.todos_mensajes.await();
 			hay_mensaje.await();
-		System.out.println(true);
+		}
 		ArrayList<Mensaje> aux = mensaje.get(uid);
-		Mensaje msge=aux.get(aux.size() - 1);
+		Mensaje msge = aux.get(aux.size() - 1);
 		mensaje.remove(uid);
 		mutex.leave();
-		return  msge;
+		return msge;
 	}
 
 }

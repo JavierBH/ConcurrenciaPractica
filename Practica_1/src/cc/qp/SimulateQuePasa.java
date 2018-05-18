@@ -26,7 +26,7 @@ public class SimulateQuePasa {
     // usuarios 
     LinkedList<Integer> usarios = new LinkedList<Integer>();
     
-    int numUsarios = rdm.nextInt(3)+3;
+    int numUsarios = 3;
     System.out.println("Vamos a simular usando "+numUsarios+" usarios");
     
     LinkedList<String> grupos = new LinkedList<String>();
