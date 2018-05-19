@@ -11,7 +11,6 @@ public class QuePasaMonitor implements QuePasa {
 	private Map<String, Integer> creador = new HashMap<String, Integer>();
 	private Map<Integer, ArrayList<Mensaje>> mensaje = new HashMap<Integer, ArrayList<Mensaje>>();
 	private Monitor mutex;
-	// Todavía no se cuantas hay_mensajes poner
 	private Monitor.Cond hay_mensaje;
 	private Monitor.Cond todos_mensajes;
 	public QuePasaMonitor() {
@@ -22,7 +21,6 @@ public class QuePasaMonitor implements QuePasa {
 
 	@Override
 	public void crearGrupo(int creadorUid, String grupo) throws PreconditionFailedException {
-		// Si el grupo ya está creado devuelve un error
 		mutex.enter();
 		if (creador.containsKey(grupo)) {
 			mutex.leave();
@@ -32,6 +30,10 @@ public class QuePasaMonitor implements QuePasa {
 		ArrayList<Integer> miembros_lista = new ArrayList<Integer>();
 		miembros_lista.add(creadorUid);
 		miembros.put(grupo, miembros_lista);
+		if(mensaje.get(creadorUid)==null) {
+			ArrayList<Mensaje> nuevo=new ArrayList<Mensaje>();
+			mensaje.put(creadorUid,nuevo);
+		}
 		mutex.leave();
 
 	}
@@ -45,7 +47,10 @@ public class QuePasaMonitor implements QuePasa {
 		}
 		ArrayList<Integer> listaActualizada = miembros.get(grupo);
 		listaActualizada.add(nuevoMiembroUid);
-		miembros.replace(grupo, listaActualizada);
+		miembros.remove(grupo);
+		miembros.put(grupo, listaActualizada);
+		ArrayList<Mensaje> nuevo=new ArrayList<Mensaje>();
+		mensaje.put(nuevoMiembroUid,nuevo);
 		mutex.leave();
 	}
 
@@ -56,9 +61,18 @@ public class QuePasaMonitor implements QuePasa {
 			mutex.leave();
 			throw new PreconditionFailedException();
 		}
+		ArrayList<Mensaje> borrados=mensaje.get(miembroUid);
+		for(int i=0;i<borrados.size();i++) {
+			if(borrados.get(i).getGrupo().equals(grupo)) {
+				borrados.remove(i);
+			}
+		}
+		mensaje.remove(miembroUid);
+		mensaje.put(miembroUid,borrados);
 		ArrayList<Integer> listaActualizada = miembros.get(grupo);
 		listaActualizada.remove(miembroUid);
-		miembros.replace(grupo, listaActualizada);
+		miembros.remove(grupo);
+		miembros.put(grupo, listaActualizada);
 		mutex.leave();
 	}
 
@@ -74,20 +88,9 @@ public class QuePasaMonitor implements QuePasa {
 		Mensaje msge = new Mensaje(remitenteUid, grupo, contenidos);
 		for (int i = 0; i < n_miembros.size(); i++) {
 			ArrayList<Mensaje> aux = mensaje.get(n_miembros.get(i));
-			if (aux != null) {
-				aux.add(msge);
-				mensaje.put(n_miembros.get(i), aux);
-				if (hay_mensaje.waiting() > 0) {
-					hay_mensaje.signal();
-				}
-			} else {
-				ArrayList<Mensaje> aux2 = new ArrayList<Mensaje>();
-				aux2.add(msge);
-				mensaje.put(n_miembros.get(i), aux2);
-				if (hay_mensaje.waiting() > 0) {
-					hay_mensaje.signal();
-				}
-			}
+			aux.add(msge);
+			mensaje.put(n_miembros.get(i), aux);
+			hay_mensaje.signal();
 		}
 		this.todos_mensajes.signal();
 		mutex.leave();
@@ -96,13 +99,16 @@ public class QuePasaMonitor implements QuePasa {
 	@Override
 	public Mensaje leer(int uid) {
 		mutex.enter();
-		if (mensaje.get(uid) == null){
+		while (mensaje.get(uid)==null||mensaje.get(uid).isEmpty()){
 			this.todos_mensajes.await();
 			hay_mensaje.await();
 		}
+		//System.out.println(true);
 		ArrayList<Mensaje> aux = mensaje.get(uid);
-		Mensaje msge = aux.get(aux.size() - 1);
+		Mensaje msge = aux.get(0);
+		aux.remove(0);
 		mensaje.remove(uid);
+		mensaje.put(uid,aux);
 		mutex.leave();
 		return msge;
 	}
