@@ -13,11 +13,9 @@ public class QuePasaMonitor implements QuePasa {
 	private Map<Integer, LinkedList<Mensaje>> mensaje = new HashMap<Integer, LinkedList<Mensaje>>();
 	private Monitor mutex;
 	private Monitor.Cond hay_mensaje;
-	private Monitor.Cond todos_mensajes;
 	public QuePasaMonitor() {
 		mutex = new Monitor();
 		hay_mensaje = mutex.newCond();
-		todos_mensajes = mutex.newCond();
 	}
 	@Override
 	public void crearGrupo(int creadorUid, String grupo) throws PreconditionFailedException {
@@ -90,6 +88,7 @@ public class QuePasaMonitor implements QuePasa {
 			LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
 			aux.addLast(msge);
 			mensaje.put(n_miembros.get(i), aux);
+			if (hay_mensaje.waiting() >0)
 			hay_mensaje.signal();
 		}
 		mutex.leave();
