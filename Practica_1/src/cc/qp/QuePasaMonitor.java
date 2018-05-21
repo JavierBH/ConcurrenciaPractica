@@ -90,7 +90,7 @@ public class QuePasaMonitor implements QuePasa {
 	public void mandarMensaje(int remitenteUid, String grupo, Object contenidos) throws PreconditionFailedException {
 		mutex.enter();
 		// Error, NullPointerException
-		if (miembros.get(grupo) == null || miembros.get(grupo).contains(remitenteUid)) {
+		if (miembros.get(grupo) == null || !miembros.get(grupo).contains(remitenteUid)) {
 			mutex.leave();
 			throw new PreconditionFailedException();
 		}
@@ -145,7 +145,7 @@ public class QuePasaMonitor implements QuePasa {
 	}
 
 	public void desbloquear(int uid) {
-		if (!(mensaje.get(uid) == null || mensaje.get(uid).isEmpty())) {
+		if (!(conditions.get(uid) == null) && !conditions.get(uid).isEmpty()) {
 			this.conditions.get(uid).getLast().signal();
 		}
 	}
