@@ -11,12 +11,15 @@ public class QuePasaMonitor implements QuePasa {
 	private Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
 	private Map<String, Integer> creador = new HashMap<String, Integer>();
 	private Map<Integer, LinkedList<Mensaje>> mensaje = new HashMap<Integer, LinkedList<Mensaje>>();
+	private Map<Integer, LinkedList<Monitor.Cond>> conditions = new HashMap<Integer, LinkedList<Monitor.Cond>>();
 	private Monitor mutex;
 	private Monitor.Cond hay_mensaje;
+
 	public QuePasaMonitor() {
 		mutex = new Monitor();
 		hay_mensaje = mutex.newCond();
 	}
+
 	@Override
 	public void crearGrupo(int creadorUid, String grupo) throws PreconditionFailedException {
 		mutex.enter();
@@ -28,9 +31,9 @@ public class QuePasaMonitor implements QuePasa {
 		ArrayList<Integer> miembros_lista = new ArrayList<Integer>();
 		miembros_lista.add(creadorUid);
 		miembros.put(grupo, miembros_lista);
-		if(mensaje.get(creadorUid)==null) {
-			LinkedList<Mensaje> nuevo=new LinkedList<Mensaje>();
-			mensaje.put(creadorUid,nuevo);
+		if (mensaje.get(creadorUid) == null) {
+			LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
+			mensaje.put(creadorUid, nuevo);
 		}
 		mutex.leave();
 
@@ -45,33 +48,38 @@ public class QuePasaMonitor implements QuePasa {
 		}
 		ArrayList<Integer> listaActualizada = miembros.get(grupo);
 		listaActualizada.add(nuevoMiembroUid);
-		//Esto puede producir error en MandarMensaje
+		// Esto puede producir error en MandarMensaje
 		miembros.remove(grupo);
 		miembros.put(grupo, listaActualizada);
-		LinkedList<Mensaje> nuevo=new LinkedList<Mensaje>();
-		mensaje.put(nuevoMiembroUid,nuevo);
+		LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
+		mensaje.put(nuevoMiembroUid, nuevo);
 		mutex.leave();
 	}
+
 	@Override
 	public void salirGrupo(int miembroUid, String grupo) throws PreconditionFailedException {
 		mutex.enter();
-		//Error NullPointerException
-		if (creador.get(grupo)==null && miembros.get(grupo).contains(miembroUid) && creador.get(grupo).equals(miembroUid) ) {
+		if ((creador.get(grupo) == null || miembros.get(grupo) == null)
+				|| (!miembros.get(grupo).contains(miembroUid) && !creador.get(grupo).equals(miembroUid))) {
 			mutex.leave();
 			throw new PreconditionFailedException();
 		}
-		if (miembroUid != 0){miembroUid--;} 
-		LinkedList<Mensaje> borrados=mensaje.get(miembroUid);
-		for(int i=0;i<borrados.size();i++) {
-			if(borrados.get(i).getGrupo().equals(grupo)) {
+
+		if (miembroUid != 0) {
+			miembroUid--;
+		}
+		LinkedList<Mensaje> borrados = mensaje.get(miembroUid);
+		for (int i = 0; i < borrados.size(); i++) {
+			if (borrados.get(i).getGrupo().equals(grupo)) {
 				borrados.remove(i);
 			}
 		}
-		
+
+		// Error, indexOutOfBounds
 		mensaje.remove(miembroUid);
-		mensaje.put(miembroUid,borrados);
+		mensaje.put(miembroUid, borrados);
 		ArrayList<Integer> listaActualizada = miembros.get(grupo);
-		//Error, indexOutOfBounds
+
 		listaActualizada.remove(miembroUid);
 		miembros.remove(grupo);
 		miembros.put(grupo, listaActualizada);
@@ -81,8 +89,8 @@ public class QuePasaMonitor implements QuePasa {
 	@Override
 	public void mandarMensaje(int remitenteUid, String grupo, Object contenidos) throws PreconditionFailedException {
 		mutex.enter();
-		//Error, NullPointerException
-		if (miembros.get(grupo) == null && miembros.get(grupo).contains(remitenteUid)) {
+		// Error, NullPointerException
+		if (miembros.get(grupo) == null || miembros.get(grupo).contains(remitenteUid)) {
 			mutex.leave();
 			throw new PreconditionFailedException();
 		}
@@ -93,7 +101,7 @@ public class QuePasaMonitor implements QuePasa {
 			LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
 			aux.addLast(msge);
 			mensaje.put(n_miembros.get(i), aux);
-			hay_mensaje.signal();
+			desbloquear(n_miembros.get(i));
 		}
 		mutex.leave();
 	}
@@ -101,16 +109,44 @@ public class QuePasaMonitor implements QuePasa {
 	@Override
 	public Mensaje leer(int uid) {
 		mutex.enter();
-		while (mensaje.get(uid)==null||mensaje.get(uid).isEmpty()){
-			hay_mensaje.await();
+
+		if (mensaje.get(uid) == null || mensaje.get(uid).isEmpty()) {
+			// Se crea la condicion y se almacena en el Map
+			Monitor.Cond aux = mutex.newCond();
+			// Si el la entrada del map esta vacia
+			if (this.conditions.get(uid) == null) {
+				LinkedList<Monitor.Cond> ConditionList = new LinkedList<Monitor.Cond>();
+				ConditionList.addLast(aux);
+				this.conditions.put(uid, ConditionList);
+			} else {
+				LinkedList<Monitor.Cond> ConditionList = this.conditions.get(uid);
+				ConditionList.addLast(aux);
+				this.conditions.replace(uid, ConditionList);
+			}
+
+			this.conditions.get(uid).getLast().await();
+
+			// Codigo que se ejcuta una vez dado el signal, elimina la condition
+
+			this.conditions.get(uid).removeLast();
+			// Si esta vacia la linkedList se elimina la entrada de la tabla
+			if (this.conditions.get(uid).isEmpty()) {
+				this.conditions.remove(uid);
+			}
 		}
+
 		LinkedList<Mensaje> aux = mensaje.get(uid);
 		Mensaje msge = aux.getFirst();
 		aux.removeFirst();
 		mensaje.remove(uid);
-		mensaje.put(uid,aux);
+		mensaje.put(uid, aux);
 		mutex.leave();
 		return msge;
 	}
 
+	public void desbloquear(int uid) {
+		if (!(mensaje.get(uid) == null || mensaje.get(uid).isEmpty())) {
+			this.conditions.get(uid).getLast().signal();
+		}
+	}
 }
