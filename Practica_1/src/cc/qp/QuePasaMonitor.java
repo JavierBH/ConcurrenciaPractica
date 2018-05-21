@@ -45,6 +45,7 @@ public class QuePasaMonitor implements QuePasa {
 		}
 		ArrayList<Integer> listaActualizada = miembros.get(grupo);
 		listaActualizada.add(nuevoMiembroUid);
+		//Esto puede producir error en MandarMensaje
 		miembros.remove(grupo);
 		miembros.put(grupo, listaActualizada);
 		LinkedList<Mensaje> nuevo=new LinkedList<Mensaje>();
@@ -54,6 +55,7 @@ public class QuePasaMonitor implements QuePasa {
 	@Override
 	public void salirGrupo(int miembroUid, String grupo) throws PreconditionFailedException {
 		mutex.enter();
+		//Error NullPointerException
 		if (creador.get(grupo)==null && miembros.get(grupo).contains(miembroUid) && creador.get(grupo).equals(miembroUid) ) {
 			mutex.leave();
 			throw new PreconditionFailedException();
@@ -69,6 +71,7 @@ public class QuePasaMonitor implements QuePasa {
 		mensaje.remove(miembroUid);
 		mensaje.put(miembroUid,borrados);
 		ArrayList<Integer> listaActualizada = miembros.get(grupo);
+		//Error, indexOutOfBounds
 		listaActualizada.remove(miembroUid);
 		miembros.remove(grupo);
 		miembros.put(grupo, listaActualizada);
@@ -78,6 +81,7 @@ public class QuePasaMonitor implements QuePasa {
 	@Override
 	public void mandarMensaje(int remitenteUid, String grupo, Object contenidos) throws PreconditionFailedException {
 		mutex.enter();
+		//Error, NullPointerException
 		if (miembros.get(grupo) == null && miembros.get(grupo).contains(remitenteUid)) {
 			mutex.leave();
 			throw new PreconditionFailedException();
@@ -89,8 +93,8 @@ public class QuePasaMonitor implements QuePasa {
 			LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
 			aux.addLast(msge);
 			mensaje.put(n_miembros.get(i), aux);
+			hay_mensaje.signal();
 		}
-		hay_mensaje.signal();
 		mutex.leave();
 	}
 
