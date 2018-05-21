@@ -1,4 +1,0 @@
-Añadido Map<Integer,LinkedList<Monitor.Cond>>, en el que se van guardando las conditions en referencia al Uid.
-Las conditions se almacenan en orden decreciente, siendo la ultima la primera que se debe sacar de la cola. En caso de que 
-dicha cola este vacia se elimina la entrada del map. 
-
