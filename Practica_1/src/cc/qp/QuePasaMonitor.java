@@ -8,21 +8,27 @@ import java.util.Map;
 import es.upm.babel.cclib.*;
 
 public class QuePasaMonitor implements QuePasa {
+	//ATRIBUTOS:
+	//Atributo miembros:Mapa que tiene como clave el nombre del grupo(String) y como valor una lista con los id de los miembros del grupo (ArrayList<Integer>) 
 	private Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
+	//Atributo creador: Mapa que tiene como clave el nombre del grupo(String) y como valor el id del creador del grupo(int)
 	private Map<String, Integer> creador = new HashMap<String, Integer>();
+	//Atributo mensaje: Mapa que tiene como clave el id del usuario que lee el mensaje(int) 
+	//y como valor una LIFO de mensajes(LinkedList<Mensaje>) 
 	private Map<Integer, LinkedList<Mensaje>> mensaje = new HashMap<Integer, LinkedList<Mensaje>>();
+	//Atributo conditions: Mapa que tiene como clave el id del usuario que lee el mensaje(int) 
+	//y como valor una LIFO de condiciones(LinkedList<Monitor.Cond>)
 	private Map<Integer, LinkedList<Monitor.Cond>> conditions = new HashMap<Integer, LinkedList<Monitor.Cond>>();
+	//Monitor de exclusión mutua
 	private Monitor mutex;
-	private Monitor.Cond mutex_signal;
-
 	public QuePasaMonitor() {
 		mutex = new Monitor();
-		mutex_signal = mutex.newCond();
 	}
-
+	
 	@Override
 	public void crearGrupo(int creadorUid, String grupo) throws PreconditionFailedException {
 		mutex.enter();
+		//Si el grupo ya está creado salta una excepcion
 		if (creador.containsKey(grupo)) {
 			mutex.leave();
 			throw new PreconditionFailedException();
@@ -42,6 +48,7 @@ public class QuePasaMonitor implements QuePasa {
 	@Override
 	public void anadirMiembro(int creadorUid, String grupo, int nuevoMiembroUid) throws PreconditionFailedException {
 		mutex.enter();
+		//Si el creadorUid no es el creador del grupo o el nuevoMiembroUid ya esta en el grupo salta una excepcion
 		if (!creador.containsValue(creadorUid) || miembros.get(grupo).contains(nuevoMiembroUid)) {
 			mutex.leave();
 			throw new PreconditionFailedException();
@@ -124,15 +131,14 @@ public class QuePasaMonitor implements QuePasa {
 			while(!this.conditions.get(uid).isEmpty() && this.conditions.get(uid)!=null && this.conditions.get(uid).getLast().waiting() > 0){
 				desbloquear(uid);
 			}
-			
+
 			if (this.conditions.get(uid).isEmpty()) {
 				this.conditions.remove(uid);
 			}
 		}
 
 		LinkedList<Mensaje> aux = mensaje.get(uid);
-		Mensaje msge = aux.getFirst();
-		aux.removeFirst();
+		Mensaje msge = aux.pop();
 		mensaje.remove(uid);
 		mensaje.put(uid, aux);
 		mutex.leave();
@@ -143,8 +149,7 @@ public class QuePasaMonitor implements QuePasa {
 		mutex.enter();
 		if (!(conditions.get(uid) == null) && !conditions.get(uid).isEmpty()
 				&& conditions.get(uid).getLast().waiting() > 0) {
-			this.conditions.get(uid).getLast().signal();
-			this.conditions.get(uid).removeLast();
+			this.conditions.get(uid).pop().signal();
 		}
 		mutex.leave();
 	}
