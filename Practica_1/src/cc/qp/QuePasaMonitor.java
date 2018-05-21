@@ -21,10 +21,17 @@ public class QuePasaMonitor implements QuePasa {
 	private Map<Integer, LinkedList<Monitor.Cond>> conditions = new HashMap<Integer, LinkedList<Monitor.Cond>>();
 	//Monitor de exclusión mutua
 	private Monitor mutex;
+
 	public QuePasaMonitor() {
 		mutex = new Monitor();
 	}
-	
+	/**
+	 * @param String  creadorUid
+	 * @param String grupo
+	 * Crea un grupo de QuePasa con el nombre de "grupo" cuyo creador tiene el id "creadorUid"
+	 * @return void
+	 * @throws PreconditionFailedException
+	 */
 	@Override
 	public void crearGrupo(int creadorUid, String grupo) throws PreconditionFailedException {
 		mutex.enter();
@@ -44,7 +51,14 @@ public class QuePasaMonitor implements QuePasa {
 		mutex.leave();
 
 	}
-
+	/**
+	 * @param String creadorUid
+	 * @param String grupo
+	 * @param int nuevoMiembroUid
+	 * El usuario "creadorUid" añade un nuevo miembro cuyo uid es "nuevoMiembroUid" al grupo 
+	 * @return void
+	 * @throws PreconditionFailedException
+	 */
 	@Override
 	public void anadirMiembro(int creadorUid, String grupo, int nuevoMiembroUid) throws PreconditionFailedException {
 		mutex.enter();
@@ -61,7 +75,13 @@ public class QuePasaMonitor implements QuePasa {
 		mensaje.put(nuevoMiembroUid, nuevo);
 		mutex.leave();
 	}
-
+	/**
+	 * @param String miembroUid
+	 * @param String grupo
+	 * El usuario "miembroUid" sale del grupo
+	 * @return void
+	 * @throws PreconditionFailedException
+	 */
 	@Override
 	public void salirGrupo(int miembroUid, String grupo) throws PreconditionFailedException {
 		mutex.enter();
@@ -84,8 +104,14 @@ public class QuePasaMonitor implements QuePasa {
 		miembros.put(grupo, listaActualizada);
 		mutex.leave();
 	}
-
-
+	/**
+	 * @param int remitenteUid
+	 * @param String grupo
+	 * @param Object contenidos
+	 * El usuario "remitenteUid" manda un mensaje "contenidos" por el grupo
+	 * @return void
+	 * @throws PreconditionFailedException
+	 */
 	@Override
 	public void mandarMensaje(int remitenteUid, String grupo, Object contenidos) throws PreconditionFailedException {
 		mutex.enter();
@@ -104,13 +130,18 @@ public class QuePasaMonitor implements QuePasa {
 		}
 		mutex.leave();
 	}
-
+	/**
+	 *	@param int uid
+	 * 	Lee el primer mensaje disponible de lista de mensaje(uid)
+	 * @return Mensaje
+	 * @throws PreconditionFailedException
+	 */
 	@Override
 	public Mensaje leer(int uid) {
 		mutex.enter();
 
 		if (mensaje.get(uid) == null || mensaje.get(uid).isEmpty()) {
-			// Se crea la condicion y se almacena en el Map
+			// Se crea la condicion y se almacena en el Map 
 			Monitor.Cond aux = mutex.newCond();
 
 			if (this.conditions.get(uid) == null) {
@@ -144,7 +175,11 @@ public class QuePasaMonitor implements QuePasa {
 		mutex.leave();
 		return msge;
 	}
-
+	/**
+	 *	@param int uid
+	 *  Desbloquea una condition de la lista conditions(uid) y luego elimina la condition 
+	 * @return void
+	 */
 	public void desbloquear(int uid) {
 		mutex.enter();
 		if (!(conditions.get(uid) == null) && !conditions.get(uid).isEmpty()
