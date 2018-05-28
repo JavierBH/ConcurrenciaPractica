@@ -25,6 +25,7 @@ public class QuePasaMonitor implements QuePasa {
 	public QuePasaMonitor() {
 		mutex = new Monitor();
 	}
+	
 	/**
 	 * @param String  creadorUid
 	 * @param String grupo
@@ -32,6 +33,7 @@ public class QuePasaMonitor implements QuePasa {
 	 * @return void
 	 * @throws PreconditionFailedException
 	 */
+	
 	@Override
 	public void crearGrupo(int creadorUid, String grupo) throws PreconditionFailedException {
 		mutex.enter();
@@ -51,6 +53,7 @@ public class QuePasaMonitor implements QuePasa {
 		mutex.leave();
 
 	}
+
 	/**
 	 * @param String creadorUid
 	 * @param String grupo
@@ -59,6 +62,7 @@ public class QuePasaMonitor implements QuePasa {
 	 * @return void
 	 * @throws PreconditionFailedException
 	 */
+
 	@Override
 	public void anadirMiembro(int creadorUid, String grupo, int nuevoMiembroUid) throws PreconditionFailedException {
 		mutex.enter();
