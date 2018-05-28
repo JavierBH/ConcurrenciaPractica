@@ -1,4 +1,8 @@
+/**
+ * @author Bachiller Javier Barrag�n Haro y su increible escudero Raul Carbajosa Gonzalez
+ * */
 package cc.qp;
+
 
 import org.jcsp.lang.Alternative;
 import org.jcsp.lang.AltingChannelInput;
@@ -48,7 +52,7 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 	}
 
 	public class PetAnadirMiembro {
-		public One2OneChannel pre;
+		public One2OneChannel chAnadir;
 		public int creadorUid;
 		public String grupo;
 		public int nuevoMiembroUid;
@@ -57,20 +61,20 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 			this.creadorUid = creadorUid;
 			this.grupo = grupo;
 			this.nuevoMiembroUid = nuevoMiembroUid;
-			pre = Channel.one2one();
+			chAnadir = Channel.one2one();
 		}
 	}
 
 	public class PetSalirGrupo {
 		// TO DO : atributos de la clase
-		public One2OneChannel pre;
+		public One2OneChannel chSalir;
 		public int miembroUid;
 		public String grupo;
 
 		public PetSalirGrupo(int miembroUid, String grupo) {
 			this.miembroUid = miembroUid;
 			this.grupo = grupo;
-			pre = Channel.one2one();
+			chSalir = Channel.one2one();
 		}
 	}
 
@@ -79,13 +83,13 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 		public int remitenteUid;
 		public String grupo;
 		public Object contenidos;
-		public One2OneChannel pre;
+		public One2OneChannel chMandar;
 
 		public PetMandarMensaje(int remitenteUid, String grupo, Object contenidos) {
 			this.remitenteUid = remitenteUid;
 			this.grupo = grupo;
 			this.contenidos = contenidos;
-			pre = Channel.one2one();
+			chMandar = Channel.one2one();
 		}
 	}
 
@@ -115,27 +119,27 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 	}
 
 	public void anadirMiembro(int uid, String grupo, int nuevoMiembroUid) throws PreconditionFailedException {
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
+		PetAnadirMiembro pet = new PetAnadirMiembro(uid, grupo, nuevoMiembroUid);
+		chAnadirMiembro.out().write(pet);
+		Boolean exito = (Boolean) pet.chAnadir.in().read();
+		if (!exito)
+			throw new PreconditionFailedException();
 	}
 
 	public void salirGrupo(int uid, String grupo) throws PreconditionFailedException {
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
+		PetSalirGrupo pet = new PetSalirGrupo(uid,grupo);
+		chSalirGrupo.out().write(pet);
+		Boolean exito = (Boolean) pet.chSalir.in().read();
+		if (!exito)
+			throw new PreconditionFailedException();
 	}
 
 	public void mandarMensaje(int remitenteUid, String grupo, Object contenidos) throws PreconditionFailedException {
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
+		PetMandarMensaje pet = new PetMandarMensaje(remitenteUid,grupo,contenidos);
+		chMandarMensaje.out().write(pet);
+		Boolean exito = (Boolean) pet.chMandar.in().read();
+		if (!exito)
+			throw new PreconditionFailedException();
 	}
 
 	public Mensaje leer(int uid) {
@@ -146,7 +150,7 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 		return null;
 	}
 
-	// El servidor va en el método run()
+	// El servidor va en el metodo run()
 	public void run() {
 
 	// Mete aquí tu implementación del estado del recurso
