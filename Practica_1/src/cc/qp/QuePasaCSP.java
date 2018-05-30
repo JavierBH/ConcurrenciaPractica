@@ -3,7 +3,6 @@
  * */
 package cc.qp;
 
-
 import org.jcsp.lang.Alternative;
 import org.jcsp.lang.AltingChannelInput;
 import org.jcsp.lang.Any2OneChannel;
@@ -12,14 +11,12 @@ import org.jcsp.lang.Channel;
 import org.jcsp.lang.Guard;
 import org.jcsp.lang.One2OneChannel;
 
-// TO DO: importad aquí lo que hayáis usado para implementar
-//        el estado del recurso
-// TO DO
-// TO DO
-// TO DO 
-// TO DO
-// TO DO
-// TO DO
+import es.upm.babel.cclib.Monitor;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 
 public class QuePasaCSP implements QuePasa, CSProcess {
 
@@ -96,11 +93,11 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 	public class PetLeer {
 		// TO DO: atributos de la clase
 		public int uid;
-		public One2OneChannel pre;
+		public One2OneChannel chLeer;
 
 		public PetLeer(int uid) {
 			this.uid = uid;
-			pre = Channel.one2one();
+			chLeer = Channel.one2one();
 		}
 	}
 
@@ -127,7 +124,7 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 	}
 
 	public void salirGrupo(int uid, String grupo) throws PreconditionFailedException {
-		PetSalirGrupo pet = new PetSalirGrupo(uid,grupo);
+		PetSalirGrupo pet = new PetSalirGrupo(uid, grupo);
 		chSalirGrupo.out().write(pet);
 		Boolean exito = (Boolean) pet.chSalir.in().read();
 		if (!exito)
@@ -135,7 +132,7 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 	}
 
 	public void mandarMensaje(int remitenteUid, String grupo, Object contenidos) throws PreconditionFailedException {
-		PetMandarMensaje pet = new PetMandarMensaje(remitenteUid,grupo,contenidos);
+		PetMandarMensaje pet = new PetMandarMensaje(remitenteUid, grupo, contenidos);
 		chMandarMensaje.out().write(pet);
 		Boolean exito = (Boolean) pet.chMandar.in().read();
 		if (!exito)
@@ -143,188 +140,199 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 	}
 
 	public Mensaje leer(int uid) {
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		return null;
+		PetLeer pet = new PetLeer(uid);
+		chPetLeer.out().write(pet);
+		return (Mensaje) pet.chLeer.in().read();
 	}
 
 	// El servidor va en el metodo run()
 	public void run() {
 
-	// Mete aquí tu implementación del estado del recurso
-	// (tráela de la práctica 1)
-	// TO DO
-	// TO DO
-	// TO DO
-	// TO DO
-	// TO DO
-	// TO DO
-	// Colección para aplazar peticiones de leer
-	// (adapta la que usaste en monitores, pero
-	//  sustituye las Cond por One2OneChannel)
-	// TO DO
-	// TO DO
+		// Mete aquí tu implementación del estado del recurso
+		// (tráela de la práctica 1)
+		Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
+		Map<String, Integer> creador = new HashMap<String, Integer>();
+		Map<Integer, LinkedList<Mensaje>> mensaje = new HashMap<Integer, LinkedList<Mensaje>>();
+		Map<Integer, LinkedList<One2OneChannel>> conditions = new HashMap<Integer, LinkedList<One2OneChannel>>();
+		// TO DO
+		// TO DO
+		// Colección para aplazar peticiones de leer
+		// (adapta la que usaste en monitores, pero
+		// sustituye las Cond por One2OneChannel)
+		// TO DO
+		// TO DO
 
-	// Códigos de peticiones para facilitar la asociación
-	// de canales a operaciones 
-	final int CREAR_GRUPO    = 0;
-	final int ANADIR_MIEMBRO = 1;
-	final int SALIR_GRUPO    = 2;
-	final int MANDAR_MENSAJE = 3;
-	final int LEER           = 4;
+		// Códigos de peticiones para facilitar la asociación
+		// de canales a operaciones
+		final int CREAR_GRUPO = 0;
+		final int ANADIR_MIEMBRO = 1;
+		final int SALIR_GRUPO = 2;
+		final int MANDAR_MENSAJE = 3;
+		final int LEER = 4;
 
-	// recepción alternativa
-	final Guard[] guards = new AltingChannelInput[5];
-	guards[CREAR_GRUPO]    = chCrearGrupo.in();
-	guards[ANADIR_MIEMBRO] = chAnadirMiembro.in();
-	guards[SALIR_GRUPO]    = chSalirGrupo.in();
-	guards[MANDAR_MENSAJE] = chMandarMensaje.in();
-	guards[LEER]           = chPetLeer.in();
+		// recepción alternativa
+		final Guard[] guards = new AltingChannelInput[5];
+		guards[CREAR_GRUPO] = chCrearGrupo.in();
+		guards[ANADIR_MIEMBRO] = chAnadirMiembro.in();
+		guards[SALIR_GRUPO] = chSalirGrupo.in();
+		guards[MANDAR_MENSAJE] = chMandarMensaje.in();
+		guards[LEER] = chPetLeer.in();
 
-	final Alternative services = new Alternative(guards);
-	int chosenService;
+		final Alternative services = new Alternative(guards);
+		int chosenService;
 
-	while (true) {
-	    // toda recepcion es incondicional
-	    chosenService = services.fairSelect();
-	    switch (chosenService) {
-		// regalamos la implementación del servicio de crearGrupo
-	    case CREAR_GRUPO: {
-		// recepción del mensaje
-		PetCrearGrupo pet = (PetCrearGrupo) chCrearGrupo.in().read();
-		// comprobación de la PRE
-		if (/* TO DO: copia aquí tu implementación de la PRE */)
-		    // status KO
-		    pet.chResp.out().write(false);
-		// ejecución normal
-		else {
-		    // operación
-		    // TO DO: copia aquí tu implementación
-		    //        de crearGrupo de la práctica 1
-		    // TO DO
-		    // TO DO
-		    // TO DO
-		    // TO DO
-		    // TO DO
-		    // status OK
-		    pet.chResp.out().write(true);
-		}
-		break;
-	    }
-	    case ANADIR_MIEMBRO: {
-		// recepcion del mensaje
-		// TO DO
-		// comprobacion de la PRE
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// ejecucion normal
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		break;
-	    }
-	    case SALIR_GRUPO: {
-		// recepcion de la peticion
-		// TO DO
-		// comprobacion de la PRE
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// ejecucion normal
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		break;
-	    }
-	    case MANDAR_MENSAJE: {
-		// recepcion de la peticion
-		// TO DO
-		// comprobacion de la PRE
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// ejecucion normal
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		break;
-	    }
-	    case LEER: {
-		// recepcion de la peticion
-		// TO DO
-		// no hay PRE que comprobar!
-		// TO DO: aquí lo más sencillo 
-		// TO DO  es guardar la petición
-		// TO DO  según se recibe
-		// TO DO  (reutilizad la estructura que 
-		// TO DO   usasteis en monitores
-		// TO DO   cambiando Cond por One2OneChannel)
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		break;
-	    }
-	    } // END SWITCH
+		while (true) {
+			// toda recepcion es incondicional
+			chosenService = services.fairSelect();
+			switch (chosenService) {
+			// regalamos la implementación del servicio de crearGrupo
+			case CREAR_GRUPO: {
+				// recepción del mensaje
+				PetCrearGrupo pet = (PetCrearGrupo) chCrearGrupo.in().read();
+				// comprobación de la PRE
+				if (creador.containsKey(pet.grupo))
+					// status KO
+					pet.chResp.out().write(false);
+				// ejecución normal
+				else {
+					// operación
+					// TO DO: copia aquí tu implementación
+					// de crearGrupo de la práctica 1
+					creador.put(pet.grupo, pet.creadorUid);
+					ArrayList<Integer> miembros_lista = new ArrayList<Integer>();
+					miembros_lista.add(pet.creadorUid);
+					miembros.put(pet.grupo, miembros_lista);
+					if (mensaje.get(pet.creadorUid) == null) {
+						LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
+						mensaje.put(pet.creadorUid, nuevo);
+					}
+					// status OK
+					pet.chResp.out().write(true);
+				}
+				break;
+			}
+			case ANADIR_MIEMBRO: {
+				// recepcion del mensaje
+				PetAnadirMiembro pet = (PetAnadirMiembro) chAnadirMiembro.in().read();
+				// comprobacion de la PRE
+				if (!creador.containsValue(pet.creadorUid) || miembros.get(pet.grupo).contains(pet.nuevoMiembroUid))
+					// status KO
+					pet.chAnadir.out().write(false);
+				// ejecución normal
+				else {
+					ArrayList<Integer> listaActualizada = miembros.get(pet.grupo);
+					listaActualizada.add(pet.nuevoMiembroUid);
+					miembros.remove(pet.grupo);
+					miembros.put(pet.grupo, listaActualizada);
+					LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
+					mensaje.put(pet.nuevoMiembroUid, nuevo);
+					// status OK
+					pet.chAnadir.out().write(true);
+				}
+				break;
+			}
+			case SALIR_GRUPO: {
+				// recepcion de la peticion
+				PetSalirGrupo pet = (PetSalirGrupo) chSalirGrupo.in().read();
+				// comprobacion de la PRE
+				if ((creador.get(pet.grupo) == null || miembros.get(pet.grupo) == null)
+						|| (!miembros.get(pet.grupo).contains(pet.miembroUid)
+								&& !creador.get(pet.grupo).equals(pet.miembroUid)))
+					// status KO
+					pet.chSalir.out().write(false);
+				// ejecución normal
+				else {
+					LinkedList<Mensaje> borrados = mensaje.get(pet.miembroUid);
+					for (int i = 0; i < borrados.size(); i++) {
+						if (borrados.get(i).getGrupo().equals(pet.grupo)) {
+							borrados.remove(i);
+						}
+					}
+					mensaje.remove(pet.miembroUid);
+					mensaje.put(pet.miembroUid, borrados);
+					ArrayList<Integer> listaActualizada = miembros.get(pet.grupo);
+					listaActualizada.remove((Object) pet.miembroUid);
+					miembros.remove(pet.grupo);
+					miembros.put(pet.grupo, listaActualizada);
+					// status OK
+					pet.chSalir.out().write(true);
+				}
+				break;
+			}
+			case MANDAR_MENSAJE: {
+				// recepcion de la peticion
+				PetMandarMensaje pet = (PetMandarMensaje) chMandarMensaje.in().read();
+				// comprobacion de la PRE
+				if (miembros.get(pet.grupo) == null || !miembros.get(pet.grupo).contains(pet.remitenteUid))
+					// status KO
+					pet.chMandar.out().write(false);
+				else {
+					ArrayList<Integer> n_miembros = miembros.get(pet.grupo);
+					Mensaje msge = new Mensaje(pet.remitenteUid, pet.grupo, pet.contenidos);
+					for (int i = 0; i < n_miembros.size(); i++) {
+						LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
+						aux.addLast(msge);
+						mensaje.put(n_miembros.get(i), aux);
+					}
+				}
+				break;
+			}
+			case LEER: {
+				// recepcion de la peticion
+				// TO DO
+				// no hay PRE que comprobar!
+				// TO DO: aquí lo más sencillo
+				// TO DO es guardar la petición
+				// TO DO según se recibe
+				// TO DO (reutilizad la estructura que
+				// TO DO usasteis en monitores
+				// TO DO cambiando Cond por One2OneChannel)
+				PetLeer pet = (PetLeer) chPetLeer.in().read();
+				if (mensaje.get(pet.uid) == null || mensaje.get(pet.uid).isEmpty()) {
+					// Se crea la condicion y se almacena en el Map
+					One2OneChannel aux = Channel.one2one();
 
-	    // código de desbloqueos
-	    // solo hay peticiones aplazadas de leer
-	    // TO DO: recorred la estructura 
-	    //        con las peticiones aplazadas
-	    //        y responded a todas aquellas 
-	    //        cuya CPRE se cumpla
-	    // TO DO
-	    // TO DO
-            // TO DO
-	    // TO DO
-            // TO DO
-	    // TO DO
-	    // TO DO
-	    // TO DO
-	    // TO DO
-	    // TO DO
-	    // TO DO
-	    // TO DO
-	    // TO DO
-	    // TO DO
-	    // TO DO
-	    // TO DO
-	} // END while(true) SERVIDOR
-    } // END run()
+					if (conditions.get(pet.uid) == null) {
+						LinkedList<One2OneChannel> ConditionList = new LinkedList<One2OneChannel>();
+						ConditionList.addLast(aux);
+						conditions.put(pet.uid, ConditionList);
+
+					} else {
+						LinkedList<One2OneChannel> ConditionList = conditions.get(pet.uid);
+						ConditionList.addLast(aux);
+						conditions.remove(pet.uid);
+						conditions.put(pet.uid, ConditionList);
+					}
+
+					try {
+						conditions.get(pet.uid).getLast().wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					;
+				}
+				break;
+			}
+			} // END SWITCH
+
+			// código de desbloqueos
+			// solo hay peticiones aplazadas de leer
+			// TO DO: recorred la estructura
+			// con las peticiones aplazadas
+			// y responded a todas aquellas
+			// cuya CPRE se cumpla
+			PetLeer pet = (PetLeer) chPetLeer.in().read();
+			while (conditions != null && conditions.get(pet.uid) != null && !conditions.get(pet.uid).isEmpty()
+					&& conditions.get(pet.uid) != null) {
+				if (!(conditions.get(pet.uid) == null) && !conditions.get(pet.uid).isEmpty()) {
+					conditions.get(pet.uid).pop().notify();
+				}
+				if (conditions.get(pet.uid).isEmpty()) {
+					conditions.remove(pet.uid);
+				}
+			}
+
+			
+		} // END while(true) SERVIDOR
+	} // END run()
 } // END class QuePasaCSP
