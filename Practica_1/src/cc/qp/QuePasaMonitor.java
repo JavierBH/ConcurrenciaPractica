@@ -7,7 +7,7 @@ import java.util.Map;
 
 import es.upm.babel.cclib.*;
 
-public class QuePasaMonitor implements QuePasa {
+public class QuePasaMonitor implements QuePasa, Practica {
 	//ATRIBUTOS:
 	//Atributo miembros:Mapa que tiene como clave el nombre del grupo(String) y como valor una lista con los id de los miembros del grupo (ArrayList<Integer>) 
 	private Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
@@ -191,5 +191,17 @@ public class QuePasaMonitor implements QuePasa {
 			this.conditions.get(uid).pop().signal();
 		}
 		mutex.leave();
+	}
+
+	@Override
+	public Alumno[] getAutores() {
+		return new Alumno[] {
+
+			     new Alumno("Javier Barragán Haro", "y160253"),
+
+			     new Alumno("Raul Carbajosa Gonzalez", "y160311")
+
+			 };
+
 	}
 }

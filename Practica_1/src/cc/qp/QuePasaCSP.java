@@ -8,6 +8,7 @@ import org.jcsp.lang.AltingChannelInput;
 import org.jcsp.lang.Any2OneChannel;
 import org.jcsp.lang.CSProcess;
 import org.jcsp.lang.Channel;
+import org.jcsp.lang.ChannelOutput;
 import org.jcsp.lang.Guard;
 import org.jcsp.lang.One2OneChannel;
 
@@ -273,6 +274,8 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 						LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
 						aux.addLast(msge);
 						mensaje.put(n_miembros.get(i), aux);
+						if (conditions.get(i) != null && i == pet.remitenteUid)
+							conditions.get(i).getFirst().out().write(msge);
 					}
 				}
 				break;
@@ -296,7 +299,6 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 						LinkedList<One2OneChannel> ConditionList = new LinkedList<One2OneChannel>();
 						ConditionList.addLast(aux);
 						conditions.put(pet.uid, ConditionList);
-
 					} else {
 						LinkedList<One2OneChannel> ConditionList = conditions.get(pet.uid);
 						ConditionList.addLast(aux);
@@ -304,11 +306,6 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 						conditions.put(pet.uid, ConditionList);
 					}
 
-					try {
-						conditions.get(pet.uid).getLast().wait();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
 					;
 				}
 				break;
@@ -325,14 +322,17 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 			while (conditions != null && conditions.get(pet.uid) != null && !conditions.get(pet.uid).isEmpty()
 					&& conditions.get(pet.uid) != null) {
 				if (!(conditions.get(pet.uid) == null) && !conditions.get(pet.uid).isEmpty()) {
-					conditions.get(pet.uid).pop().notify();
+					conditions.get(pet.uid).getFirst().in().read();
+					ChannelOutput aux = conditions.get(pet.uid).getFirst().out();
+					aux.write(aux);
+					conditions.get(pet.uid).getFirst().in().read();
+					conditions.get(pet.uid).removeFirst();
 				}
 				if (conditions.get(pet.uid).isEmpty()) {
 					conditions.remove(pet.uid);
 				}
 			}
 
-			
 		} // END while(true) SERVIDOR
 	} // END run()
 } // END class QuePasaCSP
