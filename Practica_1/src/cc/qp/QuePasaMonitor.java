@@ -8,40 +8,49 @@ import java.util.Map;
 import es.upm.babel.cclib.*;
 
 public class QuePasaMonitor implements QuePasa, Practica {
-	//ATRIBUTOS:
-	//Atributo miembros:Mapa que tiene como clave el nombre del grupo(String) y como valor una lista con los id de los miembros del grupo (ArrayList<Integer>) 
+	// ATRIBUTOS:
+	// Atributo miembros:Mapa que tiene como clave el nombre del grupo(String) y
+	// como valor una lista con los id de los miembros del grupo
+	// (ArrayList<Integer>)
 	private Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
-	//Atributo creador: Mapa que tiene como clave el nombre del grupo(String) y como valor el id del creador del grupo(int)
+	// Atributo creador: Mapa que tiene como clave el nombre del grupo(String) y
+	// como valor el id del creador del grupo(int)
 	private Map<String, Integer> creador = new HashMap<String, Integer>();
-	//Atributo mensaje: Mapa que tiene como clave el id del usuario que lee el mensaje(int) 
-	//y como valor una LIFO de mensajes(LinkedList<Mensaje>) 
+	// Atributo mensaje: Mapa que tiene como clave el id del usuario que lee el
+	// mensaje(int)
+	// y como valor una LIFO de mensajes(LinkedList<Mensaje>)
 	private Map<Integer, LinkedList<Mensaje>> mensaje = new HashMap<Integer, LinkedList<Mensaje>>();
-	//Atributo conditions: Mapa que tiene como clave el id del usuario que lee el mensaje(int) 
-	//y como valor una LIFO de condiciones(LinkedList<Monitor.Cond>)
+	// Atributo conditions: Mapa que tiene como clave el id del usuario que lee
+	// el mensaje(int)
+	// y como valor una LIFO de condiciones(LinkedList<Monitor.Cond>)
 	private Map<Integer, LinkedList<Monitor.Cond>> conditions = new HashMap<Integer, LinkedList<Monitor.Cond>>();
-	//Monitor de exclusión mutua
+	// Monitor de exclusión mutua
 	private Monitor mutex;
 
 	public QuePasaMonitor() {
 		mutex = new Monitor();
 	}
-	
+
 	/**
-	 * @param String  creadorUid
-	 * @param String grupo
-	 * Crea un grupo de QuePasa con el nombre de "grupo" cuyo creador tiene el id "creadorUid"
+	 * @param String
+	 *            creadorUid
+	 * @param String
+	 *            grupo Crea un grupo de QuePasa con el nombre de "grupo" cuyo
+	 *            creador tiene el id "creadorUid"
 	 * @return void
 	 * @throws PreconditionFailedException
 	 */
-	
+
 	@Override
 	public void crearGrupo(int creadorUid, String grupo) throws PreconditionFailedException {
 		mutex.enter();
-		//Si el grupo ya está creado salta una excepcion
+		// Comprobacion de la PreCondicion
+
 		if (creador.containsKey(grupo)) {
 			mutex.leave();
 			throw new PreconditionFailedException();
 		}
+
 		creador.put(grupo, creadorUid);
 		ArrayList<Integer> miembros_lista = new ArrayList<Integer>();
 		miembros_lista.add(creadorUid);
@@ -55,10 +64,13 @@ public class QuePasaMonitor implements QuePasa, Practica {
 	}
 
 	/**
-	 * @param String creadorUid
-	 * @param String grupo
-	 * @param int nuevoMiembroUid
-	 * El usuario "creadorUid" añade un nuevo miembro cuyo uid es "nuevoMiembroUid" al grupo 
+	 * @param String
+	 *            creadorUid
+	 * @param String
+	 *            grupo
+	 * @param int
+	 *            nuevoMiembroUid El usuario "creadorUid" añade un nuevo
+	 *            miembro cuyo uid es "nuevoMiembroUid" al grupo
 	 * @return void
 	 * @throws PreconditionFailedException
 	 */
@@ -66,7 +78,8 @@ public class QuePasaMonitor implements QuePasa, Practica {
 	@Override
 	public void anadirMiembro(int creadorUid, String grupo, int nuevoMiembroUid) throws PreconditionFailedException {
 		mutex.enter();
-		//Si el creadorUid no es el creador del grupo o el nuevoMiembroUid ya esta en el grupo salta una excepcion
+		// Si el creadorUid no es el creador del grupo o el nuevoMiembroUid ya
+		// esta en el grupo salta una excepcion
 		if (!creador.containsValue(creadorUid) || miembros.get(grupo).contains(nuevoMiembroUid)) {
 			mutex.leave();
 			throw new PreconditionFailedException();
@@ -79,46 +92,62 @@ public class QuePasaMonitor implements QuePasa, Practica {
 		mensaje.put(nuevoMiembroUid, nuevo);
 		mutex.leave();
 	}
+
 	/**
-	 * @param String miembroUid
-	 * @param String grupo
-	 * El usuario "miembroUid" sale del grupo
+	 * @param String
+	 *            miembroUid
+	 * @param String
+	 *            grupo El usuario "miembroUid" sale del grupo
 	 * @return void
 	 * @throws PreconditionFailedException
 	 */
 	@Override
 	public void salirGrupo(int miembroUid, String grupo) throws PreconditionFailedException {
 		mutex.enter();
+
+		// Comprobacion de la Precondicion
 		if ((creador.get(grupo) == null || miembros.get(grupo) == null)
 				|| (!miembros.get(grupo).contains(miembroUid) && !creador.get(grupo).equals(miembroUid))) {
 			mutex.leave();
 			throw new PreconditionFailedException();
 		}
+
 		LinkedList<Mensaje> borrados = mensaje.get(miembroUid);
+		// Se eliminan todos los mensajes asociados a @grupo
 		for (int i = 0; i < borrados.size(); i++) {
 			if (borrados.get(i).getGrupo().equals(grupo)) {
 				borrados.remove(i);
+
 			}
 		}
+
 		mensaje.remove(miembroUid);
 		mensaje.put(miembroUid, borrados);
+
+		// Se actualiza la lista de mensajes del miembro
 		ArrayList<Integer> listaActualizada = miembros.get(grupo);
-		listaActualizada.remove((Object)miembroUid);
+		listaActualizada.remove((Object) miembroUid);
 		miembros.remove(grupo);
 		miembros.put(grupo, listaActualizada);
 		mutex.leave();
 	}
+
 	/**
-	 * @param int remitenteUid
-	 * @param String grupo
-	 * @param Object contenidos
-	 * El usuario "remitenteUid" manda un mensaje "contenidos" por el grupo
+	 * @param int
+	 *            remitenteUid
+	 * @param String
+	 *            grupo
+	 * @param Object
+	 *            contenidos El usuario "remitenteUid" manda un mensaje
+	 *            "contenidos" por el grupo
 	 * @return void
 	 * @throws PreconditionFailedException
 	 */
 	@Override
 	public void mandarMensaje(int remitenteUid, String grupo, Object contenidos) throws PreconditionFailedException {
 		mutex.enter();
+
+		// Comprobacion de la Precondicion
 		if (miembros.get(grupo) == null || !miembros.get(grupo).contains(remitenteUid)) {
 			mutex.leave();
 			throw new PreconditionFailedException();
@@ -126,17 +155,22 @@ public class QuePasaMonitor implements QuePasa, Practica {
 
 		ArrayList<Integer> n_miembros = miembros.get(grupo);
 		Mensaje msge = new Mensaje(remitenteUid, grupo, contenidos);
+		// Se a�ade el mensaje a la cola de mensajes asociada a cada uid
+
 		for (int i = 0; i < n_miembros.size(); i++) {
 			LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
 			aux.addLast(msge);
 			mensaje.put(n_miembros.get(i), aux);
+
+			// Se desbloque los miembros bloqueados
 			desbloquear(n_miembros.get(i));
 		}
 		mutex.leave();
 	}
+
 	/**
-	 *	@param int uid
-	 * 	Lee el primer mensaje disponible de lista de mensaje(uid)
+	 * @param int
+	 *            uid Lee el primer mensaje disponible de lista de mensaje(uid)
 	 * @return Mensaje
 	 * @throws PreconditionFailedException
 	 */
@@ -145,28 +179,35 @@ public class QuePasaMonitor implements QuePasa, Practica {
 		mutex.enter();
 
 		if (mensaje.get(uid) == null || mensaje.get(uid).isEmpty()) {
-			// Se crea la condicion y se almacena en el Map 
+			// Se crea la condicion y se almacena en el Map
 			Monitor.Cond aux = mutex.newCond();
 
+			// Si no existe la entrada en el map para el uid se crea
 			if (this.conditions.get(uid) == null) {
 				LinkedList<Monitor.Cond> ConditionList = new LinkedList<Monitor.Cond>();
 				ConditionList.addLast(aux);
 				this.conditions.put(uid, ConditionList);
 
-
+				// Si existe la entrada en el map para el uid se a�ade la
+				// condition
 			} else {
 				LinkedList<Monitor.Cond> ConditionList = this.conditions.get(uid);
 				ConditionList.addLast(aux);
 				this.conditions.remove(uid);
 				this.conditions.put(uid, ConditionList);
 			}
-
+			// Se pone en await la condition
 			this.conditions.get(uid).getLast().await();
 
-			while(!this.conditions.get(uid).isEmpty() && this.conditions.get(uid)!=null && this.conditions.get(uid).getLast().waiting() > 0){
+			// Se desbloquean todas las conditions asociadas a esa entrada del
+			// map
+
+			while (!this.conditions.get(uid).isEmpty() && this.conditions.get(uid) != null
+					&& this.conditions.get(uid).getLast().waiting() > 0) {
 				desbloquear(uid);
 			}
 
+			// Se elimina la entrada de la condition
 			if (this.conditions.get(uid).isEmpty()) {
 				this.conditions.remove(uid);
 			}
@@ -179,9 +220,11 @@ public class QuePasaMonitor implements QuePasa, Practica {
 		mutex.leave();
 		return msge;
 	}
+
 	/**
-	 *	@param int uid
-	 *  Desbloquea una condition de la lista conditions(uid) y luego elimina la condition 
+	 * @param int
+	 *            uid Desbloquea una condition de la lista conditions(uid) y
+	 *            luego elimina la condition
 	 * @return void
 	 */
 	public void desbloquear(int uid) {
@@ -197,11 +240,9 @@ public class QuePasaMonitor implements QuePasa, Practica {
 	public Alumno[] getAutores() {
 		return new Alumno[] {
 
-			     new Alumno("Javier Barrag�n Haro", "y160253"),
+				new Alumno("Javier Barragan Haro", "y160253"), new Alumno("Raul Carbajosa Gonzalez", "y160311")
 
-			     new Alumno("Raul Carbajosa Gonzalez", "y160311")
-
-			 };
+		};
 
 	}
 }
