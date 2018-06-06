@@ -1,5 +1,6 @@
 package cc.qp;
 
+import java.lang.management.MonitorInfo;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -12,6 +13,7 @@ public class QuePasaMonitor implements QuePasa, Practica {
 	// Atributo miembros:Mapa que tiene como clave el nombre del grupo(String) y
 	// como valor una lista con los id de los miembros del grupo
 	// (ArrayList<Integer>)
+	private ArrayList<Integer> usuarios = new ArrayList<Integer>();
 	private Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
 	// Atributo creador: Mapa que tiene como clave el nombre del grupo(String) y
 	// como valor el id del creador del grupo(int)
@@ -22,13 +24,15 @@ public class QuePasaMonitor implements QuePasa, Practica {
 	private Map<Integer, LinkedList<Mensaje>> mensaje = new HashMap<Integer, LinkedList<Mensaje>>();
 	// Atributo conditions: Mapa que tiene como clave el id del usuario que lee
 	// el mensaje(int)
-	// y como valor una LIFO de condiciones(LinkedList<Monitor.Cond>)
-	private Map<Integer, LinkedList<Monitor.Cond>> conditions = new HashMap<Integer, LinkedList<Monitor.Cond>>();
+	// y como valor una condicion(LinkedList<Monitor.Cond>)
+	private Map<Integer, Monitor.Cond> conditions = new HashMap<Integer, Monitor.Cond>();
 	// Monitor de exclusiÃ³n mutua
 	private Monitor mutex;
+	private Monitor.Cond leer;
 
 	public QuePasaMonitor() {
 		mutex = new Monitor();
+		leer = mutex.newCond();
 	}
 
 	/**
@@ -55,6 +59,7 @@ public class QuePasaMonitor implements QuePasa, Practica {
 		ArrayList<Integer> miembros_lista = new ArrayList<Integer>();
 		miembros_lista.add(creadorUid);
 		miembros.put(grupo, miembros_lista);
+		usuarios.add(creadorUid);
 		if (mensaje.get(creadorUid) == null) {
 			LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
 			mensaje.put(creadorUid, nuevo);
@@ -84,6 +89,7 @@ public class QuePasaMonitor implements QuePasa, Practica {
 			mutex.leave();
 			throw new PreconditionFailedException();
 		}
+		this.usuarios.add(nuevoMiembroUid);
 		ArrayList<Integer> listaActualizada = miembros.get(grupo);
 		listaActualizada.add(nuevoMiembroUid);
 		miembros.remove(grupo);
@@ -117,10 +123,12 @@ public class QuePasaMonitor implements QuePasa, Practica {
 		for (int i = 0; i < borrados.size(); i++) {
 			if (borrados.get(i).getGrupo().equals(grupo)) {
 				borrados.remove(i);
-
 			}
 		}
-
+		for (int j = 0; j < this.usuarios.size(); j++) {
+			if (j == miembroUid)
+				this.usuarios.remove(miembroUid);
+		}
 		mensaje.remove(miembroUid);
 		mensaje.put(miembroUid, borrados);
 
@@ -155,16 +163,14 @@ public class QuePasaMonitor implements QuePasa, Practica {
 
 		ArrayList<Integer> n_miembros = miembros.get(grupo);
 		Mensaje msge = new Mensaje(remitenteUid, grupo, contenidos);
-		// Se añade el mensaje a la cola de mensajes asociada a cada uid
-
+		// Se anade el mensaje a la cola de mensajes asociada a cada uid
+		// desbloquear();
 		for (int i = 0; i < n_miembros.size(); i++) {
 			LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
 			aux.addLast(msge);
 			mensaje.put(n_miembros.get(i), aux);
-
-			// Se desbloque los miembros bloqueados
-			desbloquear(n_miembros.get(i));
 		}
+		desbloquear();
 		mutex.leave();
 	}
 
@@ -177,70 +183,53 @@ public class QuePasaMonitor implements QuePasa, Practica {
 	@Override
 	public Mensaje leer(int uid) {
 		mutex.enter();
-
 		if (mensaje.get(uid) == null || mensaje.get(uid).isEmpty()) {
-			// Se crea la condicion y se almacena en el Map
-			Monitor.Cond aux = mutex.newCond();
 
 			// Si no existe la entrada en el map para el uid se crea
-			if (this.conditions.get(uid) == null) {
-				LinkedList<Monitor.Cond> ConditionList = new LinkedList<Monitor.Cond>();
-				ConditionList.addLast(aux);
-				this.conditions.put(uid, ConditionList);
 
-				// Si existe la entrada en el map para el uid se añade la
-				// condition
-			} else {
-				LinkedList<Monitor.Cond> ConditionList = this.conditions.get(uid);
-				ConditionList.addLast(aux);
-				this.conditions.remove(uid);
-				this.conditions.put(uid, ConditionList);
+			if (this.conditions.get(uid) == null || this.conditions.isEmpty()) {
+				Monitor.Cond aux = mutex.newCond();
+				this.conditions.put(uid, aux);
 			}
 			// Se pone en await la condition
-			this.conditions.get(uid).getLast().await();
+			this.conditions.get(uid).await();
 
 			// Se desbloquean todas las conditions asociadas a esa entrada del
 			// map
 
-			while (!this.conditions.get(uid).isEmpty() && this.conditions.get(uid) != null
-					&& this.conditions.get(uid).getLast().waiting() > 0) {
-				desbloquear(uid);
-			}
-
-			// Se elimina la entrada de la condition
-			if (this.conditions.get(uid).isEmpty()) {
-				this.conditions.remove(uid);
-			}
 		}
-
 		LinkedList<Mensaje> aux = mensaje.get(uid);
 		Mensaje msge = aux.pop();
+
 		mensaje.remove(uid);
 		mensaje.put(uid, aux);
+		leer.signal();
 		mutex.leave();
 		return msge;
 	}
 
 	/**
 	 * @param int
-	 *            uid Desbloquea una condition de la lista conditions(uid) y
-	 *            luego elimina la condition
+	 *            uid Desbloquea una condition de la lista conditions(uid) luego
+	 *            elimina la condition
 	 * @return void
 	 */
-	public void desbloquear(int uid) {
-		mutex.enter();
-		if (!(conditions.get(uid) == null) && !conditions.get(uid).isEmpty()
-				&& conditions.get(uid).getLast().waiting() > 0) {
-			this.conditions.get(uid).pop().signal();
+
+	public void desbloquear() {
+		for (int i = 0; i < usuarios.size(); i++) {
+			if (this.usuarios != null && this.usuarios.get(i) != null && this.conditions.get(usuarios.get(i)) != null
+					&& this.conditions.get(usuarios.get(i)).waiting() > 0
+					&& !this.mensaje.get(usuarios.get(i)).isEmpty()) {
+				this.conditions.get(usuarios.get(i)).signal();
+				leer.await();
+			}
 		}
-		mutex.leave();
 	}
 
 	@Override
 	public Alumno[] getAutores() {
-		return new Alumno[] {
-
-				new Alumno("Javier Barragan Haro", "y160253"), new Alumno("Raul Carbajosa Gonzalez", "y160311")
+		return new Alumno[] { new Alumno("Javier Barragan Haro", "y160253"),
+				new Alumno("Raul Carbajosa Gonzalez", "y160311")
 
 		};
 
