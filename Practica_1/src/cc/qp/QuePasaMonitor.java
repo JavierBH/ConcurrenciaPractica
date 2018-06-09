@@ -56,6 +56,12 @@ public class QuePasaMonitor implements QuePasa {
 			mutex.leave();
 			throw new PreconditionFailedException();
 		}
+		ArrayList<Mensaje> borrar=mensaje.get(miembroUid);
+		for(int i=0;i<borrar.size();i++) {
+			if(borrar.get(i).getGrupo()==grupo) {
+				borrar.remove(i);
+			}
+		}
 		ArrayList<Integer> listaActualizada = miembros.get(grupo);
 		listaActualizada.remove(miembroUid);
 		miembros.replace(grupo, listaActualizada);
