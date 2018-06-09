@@ -3,5 +3,8 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="C:/Users/javic/Desktop/Programación/Practica_Concurrencia/cclib.jar"/>
+	<classpathentry kind="lib" path="C:/Users/javic/Desktop/Programación/Practica_Concurrencia/jcsp.jar"/>
+	<classpathentry kind="lib" path="C:/Users/rcarb/OneDrive/Escritorio/Practica paso de mensajes/ConcurrenciaPractica/cclib.jar"/>
+	<classpathentry kind="lib" path="C:/Users/rcarb/OneDrive/Escritorio/Practica paso de mensajes/ConcurrenciaPractica/jcsp.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

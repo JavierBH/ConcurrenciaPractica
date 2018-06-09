@@ -1,16 +1,17 @@
 package cc.qp;
 
-
 import java.util.Scanner;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.jcsp.lang.ProcessManager;
 
 /**
  * Main class.
  * 
  * @author Babel Group
  */
-public class SimulateQuePasa {
+public class SimulateQuePasaCSP {
   
   
   static String ingreso;
@@ -20,13 +21,14 @@ public class SimulateQuePasa {
   
   public static final void main(final String[] args) {
     
-    final QuePasa sharedResource = new QuePasaMonitor();
-    // final QuePasa sharedResource = new QuePasaCSP();
+    final QuePasaCSP sharedResource = new QuePasaCSP();
+    ProcessManager pm = new ProcessManager(sharedResource);
+    pm.start();
     
     // usuarios 
     LinkedList<Integer> usarios = new LinkedList<Integer>();
     
-    int numUsarios = 6;
+    int numUsarios = 2;
     System.out.println("Vamos a simular usando "+numUsarios+" usarios");
     
     LinkedList<String> grupos = new LinkedList<String>();
