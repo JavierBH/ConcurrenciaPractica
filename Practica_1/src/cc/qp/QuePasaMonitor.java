@@ -123,6 +123,7 @@ public class QuePasaMonitor implements QuePasa, Practica {
 				borrados.remove(i);
 			}
 		}
+		
 		mensaje.remove(miembroUid);
 		mensaje.put(miembroUid, borrados);
 

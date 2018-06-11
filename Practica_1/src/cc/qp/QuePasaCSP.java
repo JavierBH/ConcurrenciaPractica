@@ -151,10 +151,19 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 
 		// Mete aquí tu implementación del estado del recurso
 		// (tráela de la práctica 1)
+		ArrayList<Integer> usuarios = new ArrayList<Integer>();
 		Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
+		// Atributo creador: Mapa que tiene como clave el nombre del
+		// grupo(String) y
+		// como valor el id del creador del grupo(int)
 		Map<String, Integer> creador = new HashMap<String, Integer>();
+		// Atributo mensaje: Mapa que tiene como clave el id del usuario que lee
+		// el
+		// mensaje(int)
+		// y como valor una LIFO de mensajes(LinkedList<Mensaje>)
 		Map<Integer, LinkedList<Mensaje>> mensaje = new HashMap<Integer, LinkedList<Mensaje>>();
-		Map<Integer, LinkedList<One2OneChannel>> conditions = new HashMap<Integer, LinkedList<One2OneChannel>>();
+
+		Map<Integer, One2OneChannel> channels = new HashMap<Integer, One2OneChannel>();
 		// TO DO
 		// TO DO
 		// Colección para aplazar peticiones de leer
@@ -212,6 +221,7 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 				}
 				break;
 			}
+
 			case ANADIR_MIEMBRO: {
 				// recepcion del mensaje
 				PetAnadirMiembro pet = (PetAnadirMiembro) chAnadirMiembro.in().read();
@@ -262,22 +272,23 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 			}
 			case MANDAR_MENSAJE: {
 				// recepcion de la peticion
+				System.out.println("Pis");
 				PetMandarMensaje pet = (PetMandarMensaje) chMandarMensaje.in().read();
-				// comprobacion de la PRE
-				if (miembros.get(pet.grupo) == null || !miembros.get(pet.grupo).contains(pet.remitenteUid))
-					// status KO
+				// Comprobacion de la Precondicion
+				if (miembros.get(pet.grupo) == null || !miembros.get(pet.grupo).contains(pet.remitenteUid)) {
 					pet.chMandar.out().write(false);
-				else {
-					ArrayList<Integer> n_miembros = miembros.get(pet.grupo);
-					Mensaje msge = new Mensaje(pet.remitenteUid, pet.grupo, pet.contenidos);
-					for (int i = 0; i < n_miembros.size(); i++) {
-						LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
-						aux.addLast(msge);
-						mensaje.put(n_miembros.get(i), aux);
-						if (conditions.get(i) != null && i == pet.remitenteUid)
-							conditions.get(i).getFirst().out().write(msge);
-					}
 				}
+				System.out.println("Caca");
+				ArrayList<Integer> n_miembros = miembros.get(pet.grupo);
+				Mensaje msge = new Mensaje(pet.remitenteUid, pet.grupo, pet.contenidos);
+				// Se anade el mensaje a la cola de mensajes asociada a cada uid
+				for (int i = 0; i < n_miembros.size(); i++) {
+					LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
+					aux.addLast(msge);
+					mensaje.put(n_miembros.get(i), aux);
+				}
+				pet.chMandar.out().write(true);
+				System.out.println("Caca");
 				break;
 			}
 			case LEER: {
@@ -292,22 +303,25 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 				// TO DO cambiando Cond por One2OneChannel)
 				PetLeer pet = (PetLeer) chPetLeer.in().read();
 				if (mensaje.get(pet.uid) == null || mensaje.get(pet.uid).isEmpty()) {
-					// Se crea la condicion y se almacena en el Map
-					One2OneChannel aux = Channel.one2one();
 
-					if (conditions.get(pet.uid) == null) {
-						LinkedList<One2OneChannel> ConditionList = new LinkedList<One2OneChannel>();
-						ConditionList.addLast(aux);
-						conditions.put(pet.uid, ConditionList);
-					} else {
-						LinkedList<One2OneChannel> ConditionList = conditions.get(pet.uid);
-						ConditionList.addLast(aux);
-						conditions.remove(pet.uid);
-						conditions.put(pet.uid, ConditionList);
+					// Si no existe la entrada en el map para el uid se crea
+
+					if (channels.get(pet.uid) == null || channels.isEmpty()) {
+						One2OneChannel aux = pet.chLeer;
+						channels.put(pet.uid, aux);
 					}
 
-					;
+					// Se pone en await la condition
+					channels.get(pet.uid).in().read();
+					// Se desbloquean todas las conditions asociadas a esa
+					// entrada del
+					// map
+
 				}
+				channels.get(pet.uid).in().read();
+				LinkedList<Mensaje> aux = mensaje.get(pet.uid);
+				mensaje.remove(pet.uid);
+				mensaje.put(pet.uid, aux);
 				break;
 			}
 			} // END SWITCH
@@ -318,18 +332,15 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 			// con las peticiones aplazadas
 			// y responded a todas aquellas
 			// cuya CPRE se cumpla
-			PetLeer pet = (PetLeer) chPetLeer.in().read();
-			while (conditions != null && conditions.get(pet.uid) != null && !conditions.get(pet.uid).isEmpty()
-					&& conditions.get(pet.uid) != null) {
-				if (!(conditions.get(pet.uid) == null) && !conditions.get(pet.uid).isEmpty()) {
-					conditions.get(pet.uid).getFirst().in().read();
-					ChannelOutput aux = conditions.get(pet.uid).getFirst().out();
-					aux.write(aux);
-					conditions.get(pet.uid).getFirst().in().read();
-					conditions.get(pet.uid).removeFirst();
-				}
-				if (conditions.get(pet.uid).isEmpty()) {
-					conditions.remove(pet.uid);
+			boolean aux = false;
+			for (int i = 0; i < usuarios.size(); i++) {
+				if (!aux && usuarios != null && usuarios.get(i) != null && channels.get(usuarios.get(i)) != null
+						&& !mensaje.get(usuarios.get(i)).isEmpty()) {
+					channels.get(usuarios.get(i)).out().write(mensaje.get(usuarios.get(i)));
+					One2OneChannel canal = channels.get(usuarios.get(i));
+					channels.remove(usuarios.get(i));
+					channels.put(usuarios.get(i), canal);
+					aux = true;
 				}
 			}
 
