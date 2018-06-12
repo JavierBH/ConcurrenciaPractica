@@ -1,5 +1,5 @@
 /**
- * @author Bachiller Javier Barrag�n Haro y su increible escudero Raul Carbajosa Gonzalez
+ * @author Bachiller Javier Barragan Haro y su increible escudero Raul Carbajosa Gonzalez
  * */
 package cc.qp;
 
@@ -209,9 +209,12 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 					// TO DO: copia aquí tu implementación
 					// de crearGrupo de la práctica 1
 					creador.put(pet.grupo, pet.creadorUid);
+
 					ArrayList<Integer> miembros_lista = new ArrayList<Integer>();
 					miembros_lista.add(pet.creadorUid);
 					miembros.put(pet.grupo, miembros_lista);
+					miembros.put(pet.grupo, miembros_lista);
+
 					if (mensaje.get(pet.creadorUid) == null) {
 						LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
 						mensaje.put(pet.creadorUid, nuevo);
@@ -230,18 +233,20 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 					// status KO
 					pet.chAnadir.out().write(false);
 				// ejecución normal
-				else {
-					ArrayList<Integer> listaActualizada = miembros.get(pet.grupo);
-					listaActualizada.add(pet.nuevoMiembroUid);
-					miembros.remove(pet.grupo);
-					miembros.put(pet.grupo, listaActualizada);
+				usuarios.add(pet.nuevoMiembroUid);
+				ArrayList<Integer> listaActualizada = miembros.get(pet.grupo);
+				listaActualizada.add(pet.nuevoMiembroUid);
+				miembros.remove(pet.grupo);
+				miembros.put(pet.grupo, listaActualizada);
+				if (mensaje.get(pet.nuevoMiembroUid) == null) {
 					LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
 					mensaje.put(pet.nuevoMiembroUid, nuevo);
-					// status OK
-					pet.chAnadir.out().write(true);
 				}
+				// status OK
+				pet.chAnadir.out().write(true);
 				break;
 			}
+
 			case SALIR_GRUPO: {
 				// recepcion de la peticion
 				PetSalirGrupo pet = (PetSalirGrupo) chSalirGrupo.in().read();
@@ -260,8 +265,10 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 							i--;
 						}
 					}
+
 					mensaje.remove(pet.miembroUid);
 					mensaje.put(pet.miembroUid, borrados);
+
 					ArrayList<Integer> listaActualizada = miembros.get(pet.grupo);
 					listaActualizada.remove((Object) pet.miembroUid);
 					miembros.remove(pet.grupo);
@@ -273,23 +280,22 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 			}
 			case MANDAR_MENSAJE: {
 				// recepcion de la peticion
-				System.out.println("Pis");
 				PetMandarMensaje pet = (PetMandarMensaje) chMandarMensaje.in().read();
 				// Comprobacion de la Precondicion
 				if (miembros.get(pet.grupo) == null || !miembros.get(pet.grupo).contains(pet.remitenteUid)) {
 					pet.chMandar.out().write(false);
+				} else {
+					ArrayList<Integer> n_miembros = miembros.get(pet.grupo);
+					Mensaje msge = new Mensaje(pet.remitenteUid, pet.grupo, pet.contenidos);
+					// Se anade el mensaje a la cola de mensajes asociada a cada
+					// uid
+					for (int i = 0; i < n_miembros.size(); i++) {
+						LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
+						aux.addLast(msge);
+						mensaje.put(n_miembros.get(i), aux);
+					}
+					pet.chMandar.out().write(true);
 				}
-				System.out.println("Caca");
-				ArrayList<Integer> n_miembros = miembros.get(pet.grupo);
-				Mensaje msge = new Mensaje(pet.remitenteUid, pet.grupo, pet.contenidos);
-				// Se anade el mensaje a la cola de mensajes asociada a cada uid
-				for (int i = 0; i < n_miembros.size(); i++) {
-					LinkedList<Mensaje> aux = mensaje.get(n_miembros.get(i));
-					aux.addLast(msge);
-					mensaje.put(n_miembros.get(i), aux);
-				}
-				pet.chMandar.out().write(true);
-				System.out.println("Caca");
 				break;
 			}
 			case LEER: {
@@ -308,19 +314,13 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 					// Si no existe la entrada en el map para el uid se crea
 
 					if (channels.get(pet.uid) == null || channels.isEmpty()) {
-						One2OneChannel aux = Channel.one2one();
+						One2OneChannel aux = (One2OneChannel) pet.chLeer.in().read();
 						channels.put(pet.uid, aux);
 					}
-
+					// System.out.println(pet.chLeer.in().read() == null);
 					// Se pone en await la condition
 					channels.get(pet.uid).in().read();
-
 				}
-				channels.get(pet.uid).in().read();
-				LinkedList<Mensaje> aux = mensaje.get(pet.uid);
-				mensaje.remove(pet.uid);
-				mensaje.put(pet.uid, aux);
-				pet.chLeer.out().write(true);
 				break;
 			}
 			} // END SWITCH
@@ -333,12 +333,11 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 			// cuya CPRE se cumpla
 			boolean aux = false;
 			for (int i = 0; i < usuarios.size(); i++) {
+				// System.out.println(mensaje.get(usuarios.get(i)) != null);
 				if (!aux && usuarios != null && usuarios.get(i) != null && channels.get(usuarios.get(i)) != null
 						&& !mensaje.get(usuarios.get(i)).isEmpty() && mensaje.get(usuarios.get(i)) != null) {
-					channels.get(usuarios.get(i)).out().write(mensaje.get(usuarios.get(i)));
-					One2OneChannel canal = channels.get(usuarios.get(i));
-					channels.remove(usuarios.get(i));
-					channels.put(usuarios.get(i), canal);
+					System.out.println("caca");
+					// channels.get(usuarios.get(i)).out().write(mensaje.get(usuarios.get(i)).getFirst());
 					aux = true;
 				}
 			}

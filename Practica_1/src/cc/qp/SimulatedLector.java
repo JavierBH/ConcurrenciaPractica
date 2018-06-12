@@ -33,7 +33,12 @@ public class SimulatedLector extends Thread {
       //ejecutamos e imprimimos el/los mensajes leidos en el log
       ConcIO.printfnl("INIT:: "+this.uid + " leyendo... " );
       Mensaje mensaje = qp.leer(this.uid);
+      try {
       ConcIO.printfnl("END:: "+this.uid + " lee -> " + mensaje.getContenidos()+" enviado por "+mensaje.getRemitente()+" en el grupo "+mensaje.getGrupo());
+      } catch (NullPointerException e){
+    	  System.err.println("Olalla mon diu");
+    	  e.printStackTrace();
+      }
       if (!mensaje.getGrupo().equals(escritor.miGrupo)) {
         if (!escritor.gruposMiembro.contains(mensaje.getGrupo()))
           escritor.gruposMiembro.add(mensaje.getGrupo());
