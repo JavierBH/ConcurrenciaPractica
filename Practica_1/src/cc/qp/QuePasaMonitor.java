@@ -1,4 +1,5 @@
 package cc.qp;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -24,9 +25,9 @@ public class QuePasaMonitor implements QuePasa, Practica {
 	// el mensaje(int)
 	// y como valor una condicion(LinkedList<Monitor.Cond>)
 	private Map<Integer, Monitor.Cond> conditions = new HashMap<Integer, Monitor.Cond>();
-	// Monitor de exclusión mutua
+	// Monitor de exclusiï¿½n mutua
 	private Monitor mutex;
-	
+
 	public QuePasaMonitor() {
 		mutex = new Monitor();
 	}
@@ -70,8 +71,8 @@ public class QuePasaMonitor implements QuePasa, Practica {
 	 * @param String
 	 *            grupo
 	 * @param int
-	 *            nuevoMiembroUid El usuario "creadorUid" añade un nuevo
-	 *            miembro cuyo uid es "nuevoMiembroUid" al grupo
+	 *            nuevoMiembroUid El usuario "creadorUid" aï¿½ade un nuevo miembro
+	 *            cuyo uid es "nuevoMiembroUid" al grupo
 	 * @return void
 	 * @throws PreconditionFailedException
 	 */
@@ -90,9 +91,9 @@ public class QuePasaMonitor implements QuePasa, Practica {
 		listaActualizada.add(nuevoMiembroUid);
 		miembros.remove(grupo);
 		miembros.put(grupo, listaActualizada);
-		if(mensaje.get(nuevoMiembroUid)==null) {
-		LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
-		mensaje.put(nuevoMiembroUid, nuevo);
+		if (mensaje.get(nuevoMiembroUid) == null) {
+			LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
+			mensaje.put(nuevoMiembroUid, nuevo);
 		}
 		mutex.leave();
 	}
@@ -123,7 +124,6 @@ public class QuePasaMonitor implements QuePasa, Practica {
 				borrados.remove(i);
 			}
 		}
-		
 		mensaje.remove(miembroUid);
 		mensaje.put(miembroUid, borrados);
 
@@ -210,14 +210,14 @@ public class QuePasaMonitor implements QuePasa, Practica {
 	 */
 
 	public void desbloquear() {
-		boolean aux=false;
+		boolean aux = false;
 		for (int i = 0; i < usuarios.size(); i++) {
-			if (!aux && this.usuarios != null && this.usuarios.get(i) != null 
+			if (!aux && this.usuarios != null && this.usuarios.get(i) != null
 					&& this.conditions.get(usuarios.get(i)) != null
 					&& this.conditions.get(usuarios.get(i)).waiting() > 0
 					&& !this.mensaje.get(usuarios.get(i)).isEmpty()) {
 				this.conditions.get(usuarios.get(i)).signal();
-				aux=true;
+				aux = true;
 			}
 		}
 	}
