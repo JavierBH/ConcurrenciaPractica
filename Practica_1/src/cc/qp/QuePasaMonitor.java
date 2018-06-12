@@ -122,6 +122,7 @@ public class QuePasaMonitor implements QuePasa, Practica {
 		for (int i = 0; i < borrados.size(); i++) {
 			if (borrados.get(i).getGrupo().equals(grupo)) {
 				borrados.remove(i);
+				i--;
 			}
 		}
 		mensaje.remove(miembroUid);
