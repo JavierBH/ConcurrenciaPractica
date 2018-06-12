@@ -257,6 +257,7 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 					for (int i = 0; i < borrados.size(); i++) {
 						if (borrados.get(i).getGrupo().equals(pet.grupo)) {
 							borrados.remove(i);
+							i--;
 						}
 					}
 					mensaje.remove(pet.miembroUid);
@@ -307,21 +308,19 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 					// Si no existe la entrada en el map para el uid se crea
 
 					if (channels.get(pet.uid) == null || channels.isEmpty()) {
-						One2OneChannel aux = pet.chLeer;
+						One2OneChannel aux = Channel.one2one();
 						channels.put(pet.uid, aux);
 					}
 
 					// Se pone en await la condition
 					channels.get(pet.uid).in().read();
-					// Se desbloquean todas las conditions asociadas a esa
-					// entrada del
-					// map
 
 				}
 				channels.get(pet.uid).in().read();
 				LinkedList<Mensaje> aux = mensaje.get(pet.uid);
 				mensaje.remove(pet.uid);
 				mensaje.put(pet.uid, aux);
+				pet.chLeer.out().write(true);
 				break;
 			}
 			} // END SWITCH
@@ -335,7 +334,7 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 			boolean aux = false;
 			for (int i = 0; i < usuarios.size(); i++) {
 				if (!aux && usuarios != null && usuarios.get(i) != null && channels.get(usuarios.get(i)) != null
-						&& !mensaje.get(usuarios.get(i)).isEmpty()) {
+						&& !mensaje.get(usuarios.get(i)).isEmpty() && mensaje.get(usuarios.get(i)) != null) {
 					channels.get(usuarios.get(i)).out().write(mensaje.get(usuarios.get(i)));
 					One2OneChannel canal = channels.get(usuarios.get(i));
 					channels.remove(usuarios.get(i));
