@@ -28,7 +28,7 @@ public class SimulateQuePasaCSP {
     // usuarios 
     LinkedList<Integer> usarios = new LinkedList<Integer>();
     
-    int numUsarios = 3;
+    int numUsarios = 15;
     System.out.println("Vamos a simular usando "+numUsarios+" usarios");
     
     LinkedList<String> grupos = new LinkedList<String>();

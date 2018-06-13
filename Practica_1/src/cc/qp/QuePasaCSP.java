@@ -244,7 +244,7 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 					// status KO
 					pet.chAnadir.out().write(false);
 				// ejecución normal
-				// usuarios.add(pet.nuevoMiembroUid);
+				
 				ArrayList<Integer> listaActualizada = miembros.get(pet.grupo);
 				listaActualizada.add(pet.nuevoMiembroUid);
 				miembros.remove(pet.grupo);
@@ -348,6 +348,7 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 					} else {
 						peticiones.addLast(peticiones.getFirst());
 						peticiones.removeFirst();
+						i--;
 					}
 				}
 			}
