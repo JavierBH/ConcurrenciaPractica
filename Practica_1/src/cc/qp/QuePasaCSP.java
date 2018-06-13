@@ -224,7 +224,6 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 					ArrayList<Integer> miembros_lista = new ArrayList<Integer>();
 					miembros_lista.add(pet.creadorUid);
 					miembros.put(pet.grupo, miembros_lista);
-					miembros.put(pet.grupo, miembros_lista);
 
 					if (mensaje.get(pet.creadorUid) == null) {
 						LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
@@ -240,21 +239,23 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 				// recepcion del mensaje
 				PetAnadirMiembro pet = (PetAnadirMiembro) chAnadirMiembro.in().read();
 				// comprobacion de la PRE
-				if (!creador.containsValue(pet.creadorUid) || miembros.get(pet.grupo).contains(pet.nuevoMiembroUid))
+				if (!creador.containsValue(pet.creadorUid) || miembros.get(pet.grupo).contains(pet.nuevoMiembroUid)) {
 					// status KO
 					pet.chAnadir.out().write(false);
-				// ejecución normal
-				
-				ArrayList<Integer> listaActualizada = miembros.get(pet.grupo);
-				listaActualizada.add(pet.nuevoMiembroUid);
-				miembros.remove(pet.grupo);
-				miembros.put(pet.grupo, listaActualizada);
-				if (mensaje.get(pet.nuevoMiembroUid) == null) {
-					LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
-					mensaje.put(pet.nuevoMiembroUid, nuevo);
+				} else {
+					// ejecución normal
+
+					ArrayList<Integer> listaActualizada = miembros.get(pet.grupo);
+					listaActualizada.add(pet.nuevoMiembroUid);
+					miembros.remove(pet.grupo);
+					miembros.put(pet.grupo, listaActualizada);
+					if (mensaje.get(pet.nuevoMiembroUid) == null) {
+						LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
+						mensaje.put(pet.nuevoMiembroUid, nuevo);
+					}
+					// status OK
+					pet.chAnadir.out().write(true);
 				}
-				// status OK
-				pet.chAnadir.out().write(true);
 				break;
 			}
 
@@ -264,11 +265,13 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 				// comprobacion de la PRE
 				if ((creador.get(pet.grupo) == null || miembros.get(pet.grupo) == null)
 						|| (!miembros.get(pet.grupo).contains(pet.miembroUid)
-								&& !creador.get(pet.grupo).equals(pet.miembroUid)))
+								&& !creador.get(pet.grupo).equals(pet.miembroUid))) {
 					// status KO
 					pet.chSalir.out().write(false);
-				// ejecución normal
-				else {
+
+					// ejecución normal
+				} else {
+
 					LinkedList<Mensaje> borrados = mensaje.get(pet.miembroUid);
 					for (int i = 0; i < borrados.size(); i++) {
 						if (borrados.get(i).getGrupo().equals(pet.grupo)) {
@@ -336,16 +339,39 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 			// cuya CPRE se cumpl
 
 			for (int i = 0; i < usuarios.size(); i++) {
+
+				// Coprobaciones de desboqueo
 				if (usuarios != null && usuarios.get(i) != null && mensaje != null
 						&& mensaje.get(usuarios.get(i)) != null && peticiones != null && !peticiones.isEmpty()
 						&& !mensaje.get(usuarios.get(i)).isEmpty() && mensaje.get(usuarios.get(i)) != null) {
 
+					// Se comprueba si la peticion que se quiere desbloquear es
+					// igaul a uno de los usuarios bloqueados, si es igual se
+					// elimina el usuario y se manda el mensaje correspondiente
+
 					if (peticiones.getFirst().uid == usuarios.get(i)) {
-						peticiones.getFirst().chLeer.out().write(mensaje.get(usuarios.get(i)).getFirst());
+
+						// Se elimina el mensaje asociado al uid de la peticion
+
+						LinkedList<Mensaje> aux = mensaje.get(usuarios.get(i));
+						// Se manda el mensaje por el canal de la peticion
+
+						peticiones.getFirst().chLeer.out().write(aux.pop());
+						mensaje.remove(usuarios.get(i));
+						mensaje.put(usuarios.get(i), aux);
+
+						// Se eliminan la peticion y el usuario asociado a dicha
+						// peticion
 						peticiones.removeFirst();
 						usuarios.remove(i);
 						i--;
-					} else {
+
+					}
+
+					// Si la peticion que se intenta desbloquear no es igual al
+					// usuario, se mete la peticion al final de la cola y se
+					// vuelve a comprobar par a el mismo usuario
+					else {
 						peticiones.addLast(peticiones.getFirst());
 						peticiones.removeFirst();
 						i--;
