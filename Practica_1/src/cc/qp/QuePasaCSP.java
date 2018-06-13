@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-public class QuePasaCSP implements QuePasa, CSProcess {
+public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 
 	// Creamos un canal por cada operación sin CPRE
 	private Any2OneChannel chCrearGrupo = Channel.any2one();
@@ -29,6 +29,14 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 	// Creamos un canal para solicitar leer
 	// Usaremos peticiones aplazadas en el servidor para tratar
 	// la CPRE de leer
+
+	public Alumno[] getAutores() {
+		return new Alumno[] { new Alumno("Javier Barragan Haro", "y160253"),
+				new Alumno("Raul Carbajosa Gonzalez", "y160311")
+
+		};
+	}
+
 	private Any2OneChannel chPetLeer = Channel.any2one();
 
 	public QuePasaCSP() {
@@ -151,7 +159,10 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 
 		// Mete aquí tu implementación del estado del recurso
 		// (tráela de la práctica 1)
+
+		// Contiene los usuarios con peticiones aplazadas
 		ArrayList<Integer> usuarios = new ArrayList<Integer>();
+
 		Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
 		// Atributo creador: Mapa que tiene como clave el nombre del
 		// grupo(String) y
@@ -163,7 +174,7 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 		// y como valor una LIFO de mensajes(LinkedList<Mensaje>)
 		Map<Integer, LinkedList<Mensaje>> mensaje = new HashMap<Integer, LinkedList<Mensaje>>();
 
-		Map<Integer, One2OneChannel> channels = new HashMap<Integer, One2OneChannel>();
+		LinkedList<PetLeer> peticiones = new LinkedList<PetLeer>();
 		// TO DO
 		// TO DO
 		// Colección para aplazar peticiones de leer
@@ -233,7 +244,7 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 					// status KO
 					pet.chAnadir.out().write(false);
 				// ejecución normal
-				usuarios.add(pet.nuevoMiembroUid);
+				// usuarios.add(pet.nuevoMiembroUid);
 				ArrayList<Integer> listaActualizada = miembros.get(pet.grupo);
 				listaActualizada.add(pet.nuevoMiembroUid);
 				miembros.remove(pet.grupo);
@@ -309,18 +320,10 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 				// TO DO usasteis en monitores
 				// TO DO cambiando Cond por One2OneChannel)
 				PetLeer pet = (PetLeer) chPetLeer.in().read();
-				if (mensaje.get(pet.uid) == null || mensaje.get(pet.uid).isEmpty()) {
 
-					// Si no existe la entrada en el map para el uid se crea
-
-					if (channels.get(pet.uid) == null || channels.isEmpty()) {
-						One2OneChannel aux = (One2OneChannel) pet.chLeer.in().read();
-						channels.put(pet.uid, aux);
-					}
-					// System.out.println(pet.chLeer.in().read() == null);
-					// Se pone en await la condition
-					channels.get(pet.uid).in().read();
-				}
+				// Si no existe la entrada en el map para el uid se crea
+				usuarios.add(pet.uid);
+				peticiones.addLast(pet);
 				break;
 			}
 			} // END SWITCH
@@ -330,18 +333,26 @@ public class QuePasaCSP implements QuePasa, CSProcess {
 			// TO DO: recorred la estructura
 			// con las peticiones aplazadas
 			// y responded a todas aquellas
-			// cuya CPRE se cumpla
-			boolean aux = false;
+			// cuya CPRE se cumpl
+
 			for (int i = 0; i < usuarios.size(); i++) {
-				// System.out.println(mensaje.get(usuarios.get(i)) != null);
-				if (!aux && usuarios != null && usuarios.get(i) != null && channels.get(usuarios.get(i)) != null
+				if (usuarios != null && usuarios.get(i) != null && mensaje != null
+						&& mensaje.get(usuarios.get(i)) != null && peticiones != null && !peticiones.isEmpty()
 						&& !mensaje.get(usuarios.get(i)).isEmpty() && mensaje.get(usuarios.get(i)) != null) {
-					System.out.println("caca");
-					// channels.get(usuarios.get(i)).out().write(mensaje.get(usuarios.get(i)).getFirst());
-					aux = true;
+
+					if (peticiones.getFirst().uid == usuarios.get(i)) {
+						peticiones.getFirst().chLeer.out().write(mensaje.get(usuarios.get(i)).getFirst());
+						peticiones.removeFirst();
+						usuarios.remove(i);
+						i--;
+					} else {
+						peticiones.addLast(peticiones.getFirst());
+						peticiones.removeFirst();
+					}
 				}
 			}
 
 		} // END while(true) SERVIDOR
 	} // END run()
-} // END class QuePasaCSP
+
+}// END class QuePasaCSP
