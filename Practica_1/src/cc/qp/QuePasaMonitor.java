@@ -9,10 +9,11 @@ import es.upm.babel.cclib.*;
 
 public class QuePasaMonitor implements QuePasa, Practica {
 	// ATRIBUTOS:
+	// Lista en la que se guardan todos los usuarios registrados en QuePasa
+	private ArrayList<Integer> usuarios = new ArrayList<Integer>();
 	// Atributo miembros:Mapa que tiene como clave el nombre del grupo(String) y
 	// como valor una lista con los id de los miembros del grupo
 	// (ArrayList<Integer>)
-	private ArrayList<Integer> usuarios = new ArrayList<Integer>();
 	private Map<String, ArrayList<Integer>> miembros = new HashMap<String, ArrayList<Integer>>();
 	// Atributo creador: Mapa que tiene como clave el nombre del grupo(String) y
 	// como valor el id del creador del grupo(int)
@@ -54,9 +55,13 @@ public class QuePasaMonitor implements QuePasa, Practica {
 
 		creador.put(grupo, creadorUid);
 		ArrayList<Integer> miembros_lista = new ArrayList<Integer>();
+
 		miembros_lista.add(creadorUid);
 		miembros.put(grupo, miembros_lista);
 		usuarios.add(creadorUid);
+		// Si un usuario no tiene lista de mensaje asociada se le
+		// anade
+
 		if (mensaje.get(creadorUid) == null) {
 			LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
 			mensaje.put(creadorUid, nuevo);
@@ -86,11 +91,18 @@ public class QuePasaMonitor implements QuePasa, Practica {
 			mutex.leave();
 			throw new PreconditionFailedException();
 		}
+
+		// Se anade el nuevo miembro
+
 		this.usuarios.add(nuevoMiembroUid);
 		ArrayList<Integer> listaActualizada = miembros.get(grupo);
 		listaActualizada.add(nuevoMiembroUid);
 		miembros.remove(grupo);
 		miembros.put(grupo, listaActualizada);
+
+		// Si un usuario no tiene lista de mensaje asociada se le
+		// anade
+
 		if (mensaje.get(nuevoMiembroUid) == null) {
 			LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
 			mensaje.put(nuevoMiembroUid, nuevo);
@@ -125,6 +137,7 @@ public class QuePasaMonitor implements QuePasa, Practica {
 				i--;
 			}
 		}
+		// Actualizacion de las Listas
 		mensaje.remove(miembroUid);
 		mensaje.put(miembroUid, borrados);
 
@@ -159,6 +172,7 @@ public class QuePasaMonitor implements QuePasa, Practica {
 
 		ArrayList<Integer> n_miembros = miembros.get(grupo);
 		Mensaje msge = new Mensaje(remitenteUid, grupo, contenidos);
+
 		// Se anade el mensaje a la cola de mensajes asociada a cada uid
 		// desbloquear();
 		for (int i = 0; i < n_miembros.size(); i++) {
@@ -166,6 +180,8 @@ public class QuePasaMonitor implements QuePasa, Practica {
 			aux.addLast(msge);
 			mensaje.put(n_miembros.get(i), aux);
 		}
+
+		// Se desbloquean los procesos bloqueados
 		desbloquear();
 		mutex.leave();
 	}
@@ -212,16 +228,22 @@ public class QuePasaMonitor implements QuePasa, Practica {
 
 	public void desbloquear() {
 		boolean aux = false;
+
+		// Comprobacion para desbloquear
+
 		for (int i = 0; i < usuarios.size(); i++) {
 			if (!aux && this.usuarios != null && this.usuarios.get(i) != null
 					&& this.conditions.get(usuarios.get(i)) != null
 					&& this.conditions.get(usuarios.get(i)).waiting() > 0
 					&& !this.mensaje.get(usuarios.get(i)).isEmpty()) {
+
+				// Se desbloquea el proceso
+
 				this.conditions.get(usuarios.get(i)).signal();
 				aux = true;
-			}
-		}
-	}
+			} // Fin if
+		} // Fin for
+	}// Fin metodo
 
 	@Override
 	public Alumno[] getAutores() {

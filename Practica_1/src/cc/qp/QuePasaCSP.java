@@ -216,14 +216,14 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 					pet.chResp.out().write(false);
 				// ejecución normal
 				else {
-					// operación
-					// TO DO: copia aquí tu implementación
-					// de crearGrupo de la práctica 1
 					creador.put(pet.grupo, pet.creadorUid);
 
 					ArrayList<Integer> miembros_lista = new ArrayList<Integer>();
 					miembros_lista.add(pet.creadorUid);
 					miembros.put(pet.grupo, miembros_lista);
+					miembros.put(pet.grupo, miembros_lista);
+					// Si un usuario no tiene lista de mensaje asociada se le
+					// anade
 
 					if (mensaje.get(pet.creadorUid) == null) {
 						LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
@@ -243,12 +243,17 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 					// status KO
 					pet.chAnadir.out().write(false);
 				} else {
-					// ejecución normal
+					// ejecucion normal
+					// Se anade el nuevo miembro
 
 					ArrayList<Integer> listaActualizada = miembros.get(pet.grupo);
 					listaActualizada.add(pet.nuevoMiembroUid);
 					miembros.remove(pet.grupo);
 					miembros.put(pet.grupo, listaActualizada);
+
+					// Si un usuario no tiene lista de mensaje asociada se le
+					// anade
+
 					if (mensaje.get(pet.nuevoMiembroUid) == null) {
 						LinkedList<Mensaje> nuevo = new LinkedList<Mensaje>();
 						mensaje.put(pet.nuevoMiembroUid, nuevo);
@@ -273,6 +278,7 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 				} else {
 
 					LinkedList<Mensaje> borrados = mensaje.get(pet.miembroUid);
+					// Se eliminan todos los mensajes asociados al grupo
 					for (int i = 0; i < borrados.size(); i++) {
 						if (borrados.get(i).getGrupo().equals(pet.grupo)) {
 							borrados.remove(i);
@@ -280,6 +286,7 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 						}
 					}
 
+					// Actualizacion de las Listas
 					mensaje.remove(pet.miembroUid);
 					mensaje.put(pet.miembroUid, borrados);
 
@@ -297,6 +304,7 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 				PetMandarMensaje pet = (PetMandarMensaje) chMandarMensaje.in().read();
 				// Comprobacion de la Precondicion
 				if (miembros.get(pet.grupo) == null || !miembros.get(pet.grupo).contains(pet.remitenteUid)) {
+					// Status KO
 					pet.chMandar.out().write(false);
 				} else {
 					ArrayList<Integer> n_miembros = miembros.get(pet.grupo);
@@ -308,42 +316,27 @@ public class QuePasaCSP implements QuePasa, CSProcess, Practica {
 						aux.addLast(msge);
 						mensaje.put(n_miembros.get(i), aux);
 					}
+					// Status OK
 					pet.chMandar.out().write(true);
 				}
 				break;
 			}
 			case LEER: {
 				// recepcion de la peticion
-				// TO DO
-				// no hay PRE que comprobar!
-				// TO DO: aquí lo más sencillo
-				// TO DO es guardar la petición
-				// TO DO según se recibe
-				// TO DO (reutilizad la estructura que
-				// TO DO usasteis en monitores
-				// TO DO cambiando Cond por One2OneChannel)
 				PetLeer pet = (PetLeer) chPetLeer.in().read();
-
-				// Si no existe la entrada en el map para el uid se crea
+				// Se aplazan las peticiones para desbloquearlas mas tarde
 				usuarios.add(pet.uid);
 				peticiones.addLast(pet);
 				break;
 			}
 			} // END SWITCH
 
-			// código de desbloqueos
-			// solo hay peticiones aplazadas de leer
-			// TO DO: recorred la estructura
-			// con las peticiones aplazadas
-			// y responded a todas aquellas
-			// cuya CPRE se cumpl
-
 			for (int i = 0; i < usuarios.size(); i++) {
 
-				// Coprobaciones de desboqueo
-				if (usuarios != null && usuarios.get(i) != null && mensaje != null
-						&& mensaje.get(usuarios.get(i)) != null && peticiones != null && !peticiones.isEmpty()
-						&& !mensaje.get(usuarios.get(i)).isEmpty() && mensaje.get(usuarios.get(i)) != null) {
+				// Comprobaciones de desbloqueo
+
+				if (usuarios.get(i) != null && mensaje != null && mensaje.get(usuarios.get(i)) != null
+						&& !peticiones.isEmpty() && !mensaje.get(usuarios.get(i)).isEmpty()) {
 
 					// Se comprueba si la peticion que se quiere desbloquear es
 					// igaul a uno de los usuarios bloqueados, si es igual se
